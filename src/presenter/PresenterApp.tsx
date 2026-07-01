@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { buildBroadcast } from "./buildBroadcast";
 import { useFrameLoop } from "./useFrameLoop";
 import { QrImage } from "./QrImage";
@@ -9,6 +9,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Banner } from "../ui/Banner";
 import { useToast } from "../ui/Toast";
+import { FOUNTAIN_ECC, FOUNTAIN_FPS, fountainQrSize } from "./qrTuning";
 
 // Soft cap on the packed envelope size before the presenter warns that
 // scanning will take longer (more QR frames to loop through). Not a hard
@@ -23,8 +24,15 @@ export function PresenterApp() {
   const [frames, setFrames] = useState<string[]>([]);
   const [sizeBytes, setSizeBytes] = useState(0);
   const [broadcasting, setBroadcasting] = useState(false);
-  const frame = useFrameLoop(frames, 8);
+  const frame = useFrameLoop(frames, FOUNTAIN_FPS);
   const { showToast } = useToast();
+  const [viewport, setViewport] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
+
+  useEffect(() => {
+    const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const onFile = async (file: File) => {
     try {
@@ -44,18 +52,37 @@ export function PresenterApp() {
 
   if (broadcasting) {
     const readerUrl = `${location.origin}${location.pathname}#reader`;
+    const qrSize = fountainQrSize(viewport.w, viewport.h);
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-black text-white">
-        <QrImage text={frame} size={Math.min(window.innerHeight, window.innerWidth) * 0.7} />
-        <div className="text-center">
+      <div className="relative flex min-h-[var(--app-height)] flex-col bg-slate-950 text-white">
+        <div className="flex items-center justify-between gap-4 px-6 py-4">
           <p className="text-lg font-semibold">{title}</p>
-          {profile === "confidential" && (
-            <p className="text-red-400">CONFIDENTIAL · copies expire in {ttlHours}h · scan-only</p>
-          )}
-          <p className="mt-2 text-sm text-gray-400">Reader: scan the small code or open {readerUrl}</p>
+          <div className="flex items-center gap-3">
+            {profile === "confidential" && (
+              <>
+                <span className="rounded-full bg-red-600/90 px-3 py-1 text-xs font-semibold">
+                  CONFIDENTIAL · SCAN-ONLY
+                </span>
+                <span className="text-xs text-slate-400">expires in {ttlHours}h</span>
+              </>
+            )}
+          </div>
+          <Button variant="ghost" onClick={() => setBroadcasting(false)}>Stop</Button>
         </div>
-        <QrImage text={readerUrl} size={120} />
-        <button className="underline" onClick={() => setBroadcasting(false)}>Stop</button>
+
+        <div className="flex flex-1 items-center justify-center">
+          <div className="rounded-2xl bg-white p-6 shadow-xl">
+            <QrImage text={frame} size={qrSize} ecc={FOUNTAIN_ECC} />
+          </div>
+        </div>
+
+        <div className="absolute bottom-6 right-6 rounded-lg border border-white/10 bg-slate-900/95 p-4 text-center shadow-lg">
+          <p className="text-sm font-semibold">Scan to receive</p>
+          <div className="mt-2 rounded-lg bg-white p-2">
+            <QrImage text={readerUrl} size={132} />
+          </div>
+          <p className="mt-2 max-w-[160px] break-words text-xs text-slate-400">{readerUrl}</p>
+        </div>
       </div>
     );
   }
