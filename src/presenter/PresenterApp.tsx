@@ -2,8 +2,13 @@ import { useState } from "react";
 import { buildBroadcast } from "./buildBroadcast";
 import { useFrameLoop } from "./useFrameLoop";
 import { QrImage } from "./QrImage";
+import { DropZone } from "./DropZone";
 import { MobileView } from "../reader/MobileView";
 import type { SecurityProfile } from "../core/envelope";
+import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
+import { Banner } from "../ui/Banner";
+import { useToast } from "../ui/Toast";
 
 // Soft cap on the packed envelope size before the presenter warns that
 // scanning will take longer (more QR frames to loop through). Not a hard
@@ -17,12 +22,11 @@ export function PresenterApp() {
   const [md, setMd] = useState<string | null>(null);
   const [frames, setFrames] = useState<string[]>([]);
   const [sizeBytes, setSizeBytes] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const [broadcasting, setBroadcasting] = useState(false);
   const frame = useFrameLoop(frames, 8);
+  const { showToast } = useToast();
 
   const onFile = async (file: File) => {
-    setError(null);
     try {
       const buf = await file.arrayBuffer();
       const built = await buildBroadcast(buf, { title, profile, ttlHours });
@@ -34,7 +38,7 @@ export function PresenterApp() {
       setMd(null);
       setFrames([]);
       setSizeBytes(0);
-      setError("Could not read this file — please supply a .docx (not .doc)");
+      showToast("Could not read this file — please supply a .docx (not .doc)", { severity: "error" });
     }
   };
 
@@ -64,40 +68,57 @@ export function PresenterApp() {
           Receive a broadcast on this device →
         </a>
       </div>
-      <label className="block">Title
-        <input className="mt-1 w-full rounded border px-2 py-1"
-          value={title} onChange={(e) => setTitle(e.target.value)} />
-      </label>
-      <label className="block">Security profile
-        <select className="mt-1 w-full rounded border px-2 py-1" value={profile}
-          onChange={(e) => setProfile(e.target.value as SecurityProfile)}>
-          <option value="confidential">Confidential (36h, scan-only)</option>
-          <option value="standard">Standard</option>
-        </select>
-      </label>
-      <label className="block">Expiry (hours)
-        <input type="number" className="mt-1 w-full rounded border px-2 py-1"
-          value={ttlHours} onChange={(e) => setTtlHours(Number(e.target.value))} />
-      </label>
-      <input type="file" accept=".docx"
-        onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
-      {error && <p className="text-red-600">{error}</p>}
+
+      <Card className="space-y-4">
+        <label className="block">Title
+          <input className="mt-1 w-full rounded border px-2 py-1"
+            value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+
+        <div>
+          <span className="block text-sm font-medium text-slate-700">Security profile</span>
+          <div className="mt-1 inline-flex gap-2">
+            <Button
+              type="button"
+              variant={profile === "confidential" ? "primary" : "ghost"}
+              onClick={() => setProfile("confidential")}
+            >
+              Confidential (36h, scan-only)
+            </Button>
+            <Button
+              type="button"
+              variant={profile === "standard" ? "primary" : "ghost"}
+              onClick={() => setProfile("standard")}
+            >
+              Standard
+            </Button>
+          </div>
+        </div>
+
+        <label className="block">Expiry (hours)
+          <input type="number" className="mt-1 w-full rounded border px-2 py-1"
+            value={ttlHours} onChange={(e) => setTtlHours(Number(e.target.value))} />
+        </label>
+
+        <DropZone onFile={onFile} />
+      </Card>
 
       {md && (
-        <div className="space-y-3">
+        <Card className="space-y-3">
           <h2 className="font-semibold">Preview (as phones will see it)</h2>
-          <div className="rounded border p-3"><MobileView md={md} /></div>
+          <div className="mx-auto w-[320px] rounded-2xl border-4 border-slate-800 bg-white p-3 shadow-lg">
+            <MobileView md={md} />
+          </div>
           {sizeBytes > DEFAULT_SIZE_WARN_BYTES && (
-            <p className="text-amber-600">
+            <Banner severity="soft">
               Large document ({Math.round(sizeBytes / 1024)} KB, {frames.length} frames) — scanning
               may take longer; consider splitting.
-            </p>
+            </Banner>
           )}
-          <button className="rounded bg-blue-600 px-4 py-2 text-white"
-            onClick={() => setBroadcasting(true)}>
+          <Button variant="primary" onClick={() => setBroadcasting(true)}>
             Broadcast ({frames.length} frames)
-          </button>
-        </div>
+          </Button>
+        </Card>
       )}
     </div>
   );
