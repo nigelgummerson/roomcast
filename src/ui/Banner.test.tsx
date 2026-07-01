@@ -9,4 +9,12 @@ describe("Banner", () => {
     rerender(<Banner severity="hard">stop</Banner>);
     expect(screen.getByText("stop").className).toMatch(/red/);
   });
+  it("soft uses role status, hard uses role alert", () => {
+    const { rerender } = render(<Banner severity="soft">warning</Banner>);
+    const softBanner = screen.getByText("warning");
+    expect(softBanner).toHaveAttribute("role", "status");
+    rerender(<Banner severity="hard">error</Banner>);
+    const hardBanner = screen.getByText("error");
+    expect(hardBanner).toHaveAttribute("role", "alert");
+  });
 });

@@ -6,8 +6,9 @@ const styles = {
 export function Banner({
   severity, children, className = "",
 }: { severity: "soft" | "hard"; children: ReactNode; className?: string }) {
+  const role = severity === "hard" ? "alert" : "status";
   return (
-    <div role="status" className={`rounded-lg px-3 py-2 text-sm ${styles[severity]} ${className}`}>
+    <div role={role} className={`rounded-lg px-3 py-2 text-sm ${styles[severity]} ${className}`}>
       {children}
     </div>
   );
