@@ -120,8 +120,9 @@ export function ReaderApp() {
       </div>
 
       {view === "loading" ? (
-        <div className="flex justify-center py-12" role="status" aria-label="Loading">
+        <div className="flex justify-center py-12" role="status">
           <Spinner size={32} />
+          <span className="sr-only">Loading</span>
         </div>
       ) : view === "scanning" ? (
         <div className="space-y-3">

@@ -80,4 +80,22 @@ describe("ReaderApp landing state", () => {
     const { startCamera } = await import("./scanner");
     await waitFor(() => expect(startCamera).toHaveBeenCalled());
   });
+
+  it("synchronously shows loading indicator (not scan button) on empty store", async () => {
+    // Render with empty store (no saved docs).
+    render(<ReaderApp />);
+
+    // On first synchronous render, "Scan a broadcast" button must NOT be present yet
+    // — it should only appear after listDocs resolves. If the initial view regresses
+    // to "copies", this assertion fails and locks that regression.
+    expect(
+      screen.queryByRole("button", { name: /scan a broadcast/i }),
+    ).not.toBeInTheDocument();
+
+    // Loading status must be present (role="status" + sr-only label).
+    expect(screen.getByRole("status")).toBeInTheDocument();
+
+    // Settle pending async state updates to avoid act() warnings.
+    await waitFor(() => {});
+  });
 });
