@@ -27,6 +27,9 @@ function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T
     (db) =>
       new Promise<T>((resolve, reject) => {
         const t = db.transaction(STORE, mode);
+        t.oncomplete = () => db.close();
+        t.onerror = () => db.close();
+        t.onabort = () => db.close();
         const req = fn(t.objectStore(STORE));
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
@@ -36,6 +39,28 @@ function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T
 
 function allDocs(): Promise<StoredDoc[]> {
   return tx<StoredDoc[]>("readonly", (s) => s.getAll() as IDBRequest<StoredDoc[]>);
+}
+
+function txAll(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => void): Promise<void> {
+  return openDb().then(
+    (db) =>
+      new Promise<void>((resolve, reject) => {
+        const t = db.transaction(STORE, mode);
+        t.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        t.onerror = () => {
+          db.close();
+          reject(t.error);
+        };
+        t.onabort = () => {
+          db.close();
+          reject(t.error);
+        };
+        fn(t.objectStore(STORE));
+      }),
+  );
 }
 
 export async function saveDoc(envelope: Envelope, now: number): Promise<StoredDoc> {
@@ -52,7 +77,11 @@ export async function saveDoc(envelope: Envelope, now: number): Promise<StoredDo
 export async function purgeExpired(now: number): Promise<number> {
   const docs = await allDocs();
   const expired = docs.filter((d) => d.expiresAt <= now);
-  for (const d of expired) await tx("readwrite", (s) => s.delete(d.id));
+  if (expired.length > 0) {
+    await txAll("readwrite", (s) => {
+      for (const d of expired) s.delete(d.id);
+    });
+  }
   return expired.length;
 }
 
