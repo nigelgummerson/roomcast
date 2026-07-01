@@ -29,10 +29,11 @@ export function PresenterApp() {
   const [viewport, setViewport] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
 
   useEffect(() => {
+    if (!broadcasting) return;
     const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [broadcasting]);
 
   const onFile = async (file: File) => {
     try {
@@ -55,9 +56,9 @@ export function PresenterApp() {
     const qrSize = fountainQrSize(viewport.w, viewport.h);
     return (
       <div className="relative flex min-h-[var(--app-height)] flex-col bg-slate-950 text-white">
-        <div className="flex items-center justify-between gap-4 px-6 py-4">
+        <div className="flex items-center gap-4 px-6 py-4">
           <p className="text-lg font-semibold">{title}</p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
             {profile === "confidential" && (
               <>
                 <span className="rounded-full bg-red-600/90 px-3 py-1 text-xs font-semibold">
@@ -66,8 +67,8 @@ export function PresenterApp() {
                 <span className="text-xs text-slate-400">expires in {ttlHours}h</span>
               </>
             )}
+            <Button variant="ghost" className="!bg-white/10 !text-white hover:!bg-white/20" onClick={() => setBroadcasting(false)}>Stop</Button>
           </div>
-          <Button variant="ghost" onClick={() => setBroadcasting(false)}>Stop</Button>
         </div>
 
         <div className="flex flex-1 items-center justify-center">
