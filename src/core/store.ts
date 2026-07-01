@@ -98,3 +98,15 @@ export async function listDocs(now: number): Promise<StoredDoc[]> {
   const docs = await allDocs();
   return docs.filter((d) => isLive(d, now)).sort((a, b) => b.scannedAt - a.scannedAt);
 }
+
+export async function renameDoc(id: string, title: string, now: number): Promise<StoredDoc | null> {
+  const doc = await getDoc(id, now);
+  if (!doc) return null;
+  const updated: StoredDoc = { ...doc, envelope: { ...doc.envelope, title } };
+  await tx("readwrite", (s) => s.put(updated));
+  return updated;
+}
+
+export async function deleteDoc(id: string): Promise<void> {
+  await tx("readwrite", (s) => s.delete(id));
+}

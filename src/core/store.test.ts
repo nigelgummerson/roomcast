@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
-import { saveDoc, getDoc, listDocs, purgeExpired } from "./store";
+import { saveDoc, getDoc, listDocs, purgeExpired, renameDoc, deleteDoc } from "./store";
 import type { Envelope } from "./envelope";
 
 const env: Envelope = {
@@ -54,5 +54,19 @@ describe("store", () => {
     expect(await purgeExpired(1000 + 1e12)).toBe(0); // far future, still not purged
     expect(await getDoc(saved.id, 1000 + 1e12)).not.toBeNull(); // still live
     expect((await listDocs(1000 + 1e12)).map((d) => d.envelope.title)).toContain("Rota");
+  });
+
+  it("renameDoc updates the stored title", async () => {
+    const saved = await saveDoc({ ...env, title: "Old" }, 1000);
+    const renamed = await renameDoc(saved.id, "New", 1000);
+    expect(renamed?.envelope.title).toBe("New");
+    expect((await getDoc(saved.id, 1000))?.envelope.title).toBe("New");
+  });
+
+  it("deleteDoc removes the copy", async () => {
+    const saved = await saveDoc(env, 1000);
+    await deleteDoc(saved.id);
+    expect(await getDoc(saved.id, 1000)).toBeNull();
+    expect(await listDocs(1000)).toHaveLength(0);
   });
 });
