@@ -36,6 +36,7 @@ export function ReaderApp() {
   const [torchOn, setTorchOn] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   const refresh = () => listDocs(Date.now()).then(setSaved);
 
@@ -246,7 +247,26 @@ export function ReaderApp() {
                         <Countdown expiresAt={d.expiresAt} now={now} />
                       </div>
                     </div>
-                    {editingId !== d.id && (
+                    {editingId !== d.id && confirmingDeleteId === d.id && (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-sm text-slate-600">Delete this copy?</span>
+                        <Button
+                          variant="danger"
+                          onClick={() => {
+                            deleteDoc(d.id).then(() => {
+                              setConfirmingDeleteId(null);
+                              refresh();
+                            });
+                          }}
+                        >
+                          Delete
+                        </Button>
+                        <Button variant="ghost" onClick={() => setConfirmingDeleteId(null)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+                    {editingId !== d.id && confirmingDeleteId !== d.id && (
                       <div className="flex shrink-0 gap-2">
                         <Button
                           variant="ghost"
@@ -257,12 +277,7 @@ export function ReaderApp() {
                         >
                           Rename
                         </Button>
-                        <Button
-                          variant="danger"
-                          onClick={() => {
-                            deleteDoc(d.id).then(refresh);
-                          }}
-                        >
+                        <Button variant="danger" onClick={() => setConfirmingDeleteId(d.id)}>
                           Delete
                         </Button>
                       </div>
