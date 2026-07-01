@@ -46,4 +46,21 @@ describe("mobilise", () => {
     expect(vm.sections[0].title).toBeNull();
     expect(vm.sections[0].blocks[0]).toEqual({ kind: "text", md: expect.any(String) });
   });
+
+  it("does not let the leading section's placeholder id steal a real 'intro' heading's slug", () => {
+    const vm = mobilise("# Intro\n\nhello\n");
+    expect(vm.sections).toEqual([
+      { id: "intro", title: "Intro", level: 1, blocks: [{ kind: "text", md: expect.any(String) }] },
+    ]);
+    expect(vm.index).toEqual([{ id: "intro", title: "Intro" }]);
+  });
+
+  it("dedupes duplicate headings by appending -2, -3, ...", () => {
+    const md = "## Notes\n\nfirst\n\n## Notes\n\nsecond\n";
+    const vm = mobilise(md);
+    expect(vm.index).toEqual([
+      { id: "notes", title: "Notes" },
+      { id: "notes-2", title: "Notes" },
+    ]);
+  });
 });

@@ -51,8 +51,13 @@ export function mobilise(md: string): ViewModel {
     return id;
   };
 
-  let current: Section = { id: uniqueId("intro"), title: null, level: 0, blocks: [] };
-  // Only register the leading section's id if it ends up used; drop if empty at the end.
+  // Sentinel id for the leading (untitled) section. It must never be produced by
+  // uniqueId()/slugify() for a real heading, so it is assigned directly rather than
+  // reserved via uniqueId() — slugify() strips non letter/number characters, so a
+  // leading underscore can never appear in a real heading's slug. This id is only
+  // meaningful if the leading section actually ends up kept (i.e. it has content);
+  // otherwise it is dropped below and never appears in the output.
+  let current: Section = { id: "_lead", title: null, level: 0, blocks: [] };
   const pushText = (raw: string) => {
     if (raw.trim()) current.blocks.push({ kind: "text", md: raw });
   };
