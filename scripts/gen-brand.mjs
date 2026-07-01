@@ -5,8 +5,9 @@ import { chromium } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
 const svg = readFileSync("scripts/brand/mark.svg", "utf8");
-const icon = (bg) =>
-  `<html><body style="margin:0;background:${bg};display:flex;align-items:center;justify-content:center">${svg}</body></html>`;
+const whiteSvg = svg.replace(/#005EB8/gi, "#ffffff");
+const icon = (bg, mark = svg, markSize = "80%") =>
+  `<html><body style="margin:0;background:${bg};display:flex;align-items:center;justify-content:center"><style>svg{width:${markSize};height:${markSize}}</style>${mark}</body></html>`;
 
 const jobs = [
   { file: "favicon-32.png", size: 32, html: icon("transparent"), omitBg: true },
@@ -14,7 +15,9 @@ const jobs = [
   { file: "apple-touch-icon.png", size: 180, html: icon("#ffffff"), omitBg: false },
   { file: "pwa-192.png", size: 192, html: icon("#ffffff"), omitBg: false },
   { file: "pwa-512.png", size: 512, html: icon("#ffffff"), omitBg: false },
-  { file: "pwa-maskable-512.png", size: 512, html: icon("#005EB8"), omitBg: false }, // full-bleed for maskable
+  // full-bleed blue field with a white mark scaled to a 70% safe zone, per Android
+  // adaptive-icon masking guidance.
+  { file: "pwa-maskable-512.png", size: 512, html: icon("#005EB8", whiteSvg, "70%"), omitBg: false },
 ];
 
 const browser = await chromium.launch();
