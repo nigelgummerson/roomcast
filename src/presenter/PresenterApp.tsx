@@ -58,7 +58,12 @@ export function PresenterApp() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-6">
-      <h1 className="text-2xl font-bold">roomcast — presenter</h1>
+      <div className="flex items-baseline justify-between gap-4">
+        <h1 className="text-2xl font-bold">roomcast — presenter</h1>
+        <a href="#reader" className="text-sm text-blue-600 underline">
+          Receive a broadcast on this device →
+        </a>
+      </div>
       <label className="block">Title
         <input className="mt-1 w-full rounded border px-2 py-1"
           value={title} onChange={(e) => setTitle(e.target.value)} />

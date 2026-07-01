@@ -77,7 +77,10 @@ export function ReaderApp() {
 
   return (
     <div className="space-y-4 p-4">
-      <h1 className="text-xl font-bold">roomcast</h1>
+      <div className="flex items-baseline justify-between gap-4">
+        <h1 className="text-xl font-bold">roomcast</h1>
+        <a href="#" className="text-sm text-blue-600 underline">← Presenter mode</a>
+      </div>
       {scanning ? (
         <div>
           <video ref={videoRef} className="w-full rounded" muted playsInline />

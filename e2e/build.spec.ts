@@ -13,3 +13,11 @@ test("reader route loads", async ({ page }) => {
   await page.goto("./#reader");
   await expect(page.getByRole("button", { name: /scan a broadcast/i })).toBeVisible();
 });
+
+test("presenter links to the receiver and back", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("link", { name: /receive a broadcast/i }).click();
+  await expect(page.getByRole("button", { name: /scan a broadcast/i })).toBeVisible();
+  await page.getByRole("link", { name: /presenter mode/i }).click();
+  await expect(page.getByRole("heading", { name: /roomcast — presenter/i })).toBeVisible();
+});
