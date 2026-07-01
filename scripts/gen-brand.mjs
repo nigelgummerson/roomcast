@@ -1,17 +1,21 @@
 // Generates the committed RoomCast brand asset set (favicons, PWA icons,
-// og-image) from scripts/brand/mark.svg and scripts/brand/og.html using
-// Playwright chromium. Run: node scripts/gen-brand.mjs
+// og-image) from scripts/brand/mark.svg, scripts/brand/mark-small.svg and
+// scripts/brand/og.html using Playwright chromium. Run: node scripts/gen-brand.mjs
 import { chromium } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
 const svg = readFileSync("scripts/brand/mark.svg", "utf8");
+// mark-small is a bolder, simplified variant of the mark (single thicker
+// broadcast arc, larger tile) designed to stay legible at 16/32px, where the
+// detailed mark's thin concentric arcs disappear into a blob.
+const smallSvg = readFileSync("scripts/brand/mark-small.svg", "utf8");
 const whiteSvg = svg.replace(/#005EB8/gi, "#ffffff");
 const icon = (bg, mark = svg, markSize = "80%") =>
   `<html><body style="margin:0;background:${bg};display:flex;align-items:center;justify-content:center"><style>svg{width:${markSize};height:${markSize}}</style>${mark}</body></html>`;
 
 const jobs = [
-  { file: "favicon-32.png", size: 32, html: icon("transparent"), omitBg: true },
-  { file: "favicon-16.png", size: 16, html: icon("transparent"), omitBg: true },
+  { file: "favicon-32.png", size: 32, html: icon("transparent", smallSvg), omitBg: true },
+  { file: "favicon-16.png", size: 16, html: icon("transparent", smallSvg), omitBg: true },
   { file: "apple-touch-icon.png", size: 180, html: icon("#ffffff"), omitBg: false },
   { file: "pwa-192.png", size: 192, html: icon("#ffffff"), omitBg: false },
   { file: "pwa-512.png", size: 512, html: icon("#ffffff"), omitBg: false },
