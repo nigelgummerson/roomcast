@@ -27,8 +27,10 @@ running this app should keep to fictional data unless that sign-off exists.
 
 ## Architecture
 
-One codebase, two modes, selected by hash routing in `src/App.tsx` (`#reader` → reader
-app, otherwise presenter app).
+One codebase, three modes, selected by hash routing in `src/App.tsx`: the base route
+(and `#home`) → the Home landing page, `#present` → presenter app, `#reader` → reader
+app. The Home page carries the "RoomCast" hero and CTAs to `#present`/`#reader`; the
+presenter and reader headers each carry a brand link back to `#home`.
 
 **Presenter mode** (laptop → projector): drop a `.docx` → parse to structured GFM
 markdown → preview the phone-first render → compress → fountain-encode into QR frames →
