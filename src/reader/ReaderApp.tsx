@@ -64,7 +64,7 @@ export function ReaderApp() {
   // expiry on any `now` tick, close it immediately rather than leaving the
   // patient data on screen until the user manually navigates away.
   useEffect(() => {
-    if (doc && doc.expiresAt <= now) {
+    if (doc && doc.expiresAt != null && doc.expiresAt <= now) {
       setDoc(null);
       purgeExpired(now).then(() => listDocs(now)).then(setSaved);
     }
@@ -108,11 +108,13 @@ export function ReaderApp() {
   if (doc) {
     return (
       <div>
-        <ConfidentialBanner
-          profile={doc.envelope.profile}
-          expiresAt={doc.expiresAt}
-          now={now}
-        />
+        {doc.expiresAt != null && (
+          <ConfidentialBanner
+            profile={doc.envelope.profile}
+            expiresAt={doc.expiresAt}
+            now={now}
+          />
+        )}
         <div className="p-3">
           <Button variant="ghost" className="mb-3" onClick={() => setDoc(null)}>
             <IconBack size={16} /> Back

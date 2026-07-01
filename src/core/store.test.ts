@@ -46,4 +46,13 @@ describe("store", () => {
     await saveDoc({ ...env, ttlHours: 1, title: "X" }, 1000);
     expect(await purgeExpired(1000 + 2 * HOUR)).toBe(1);
   });
+
+  it("a standard (ttlHours null) doc has null expiresAt and never purges", async () => {
+    const std = { ...env, profile: "standard" as const, ttlHours: null, title: "Rota" };
+    const saved = await saveDoc(std, 1000);
+    expect(saved.expiresAt).toBeNull();
+    expect(await purgeExpired(1000 + 1e12)).toBe(0); // far future, still not purged
+    expect(await getDoc(saved.id, 1000 + 1e12)).not.toBeNull(); // still live
+    expect((await listDocs(1000 + 1e12)).map((d) => d.envelope.title)).toContain("Rota");
+  });
 });
