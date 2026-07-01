@@ -5,21 +5,37 @@ import { QrImage } from "./QrImage";
 import { MobileView } from "../reader/MobileView";
 import type { SecurityProfile } from "../core/envelope";
 
+// Soft cap on the packed envelope size before the presenter warns that
+// scanning will take longer (more QR frames to loop through). Not a hard
+// limit — broadcasting still proceeds.
+export const DEFAULT_SIZE_WARN_BYTES = 40_000;
+
 export function PresenterApp() {
   const [title, setTitle] = useState("Handover");
   const [profile, setProfile] = useState<SecurityProfile>("confidential");
   const [ttlHours, setTtlHours] = useState(36);
   const [md, setMd] = useState<string | null>(null);
   const [frames, setFrames] = useState<string[]>([]);
+  const [sizeBytes, setSizeBytes] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const [broadcasting, setBroadcasting] = useState(false);
   const frame = useFrameLoop(frames, 8);
 
   const onFile = async (file: File) => {
-    const buf = await file.arrayBuffer();
-    const built = await buildBroadcast(buf, { title, profile, ttlHours });
-    setMd(built.md);
-    setFrames(built.frames);
-    setBroadcasting(false);
+    setError(null);
+    try {
+      const buf = await file.arrayBuffer();
+      const built = await buildBroadcast(buf, { title, profile, ttlHours });
+      setMd(built.md);
+      setFrames(built.frames);
+      setSizeBytes(built.sizeBytes);
+      setBroadcasting(false);
+    } catch {
+      setMd(null);
+      setFrames([]);
+      setSizeBytes(0);
+      setError("Could not read this file — please supply a .docx (not .doc)");
+    }
   };
 
   if (broadcasting) {
@@ -60,11 +76,18 @@ export function PresenterApp() {
       </label>
       <input type="file" accept=".docx"
         onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
+      {error && <p className="text-red-600">{error}</p>}
 
       {md && (
         <div className="space-y-3">
           <h2 className="font-semibold">Preview (as phones will see it)</h2>
           <div className="rounded border p-3"><MobileView md={md} /></div>
+          {sizeBytes > DEFAULT_SIZE_WARN_BYTES && (
+            <p className="text-amber-600">
+              Large document ({Math.round(sizeBytes / 1024)} KB, {frames.length} frames) — scanning
+              may take longer; consider splitting.
+            </p>
+          )}
           <button className="rounded bg-blue-600 px-4 py-2 text-white"
             onClick={() => setBroadcasting(true)}>
             Broadcast ({frames.length} frames)

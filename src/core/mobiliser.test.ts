@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mobilise, slugify } from "./mobiliser";
+import { mobilise, slugify, classifyTable } from "./mobiliser";
 
 describe("slugify", () => {
   it("lowercases and hyphenates", () => {
@@ -62,5 +62,38 @@ describe("mobilise", () => {
       { id: "notes", title: "Notes" },
       { id: "notes-2", title: "Notes" },
     ]);
+  });
+
+  // Regression: found via the docx edge-case corpus (Task 15) — marked's own
+  // table tokenizer silently pads every parsed row to header.length before
+  // mobilise() ever sees it, which hid the ragged-row artefact a merged
+  // (colspan) cell produces in the source GFM table. Without recovering the
+  // true per-row cell count from the raw table text, a merged-cell docx
+  // would always be misclassified as "cards" and misattribute values to the
+  // wrong labelled field instead of falling back to a raw table.
+  it("classifies a table as ragged even though marked pads the parsed row to the header width", () => {
+    const md =
+      "## List\n\n| Bed | Patient | Job |\n| --- | --- | --- |\n" +
+      "| 1 | AB - bloods due, review bloods |\n| 2 | CD | Scan |\n";
+    const vm = mobilise(md);
+    const block = vm.sections[0].blocks[0];
+    expect(block).toEqual({
+      kind: "table",
+      headers: ["Bed", "Patient", "Job"],
+      rows: [["1", "AB - bloods due, review bloods"], ["2", "CD", "Scan"]],
+      reason: "ragged rows",
+    });
+  });
+});
+
+describe("classifyTable", () => {
+  it("returns cards for a clean header + uniform rows", () => {
+    expect(classifyTable(["Bed", "Patient"], [["1", "AB"], ["2", "CD"]])).toBe("cards");
+  });
+  it("falls back to table for ragged rows (merged-cell artefact)", () => {
+    expect(classifyTable(["Bed", "Patient", "Job"], [["1", "AB"], ["2"]])).toBe("table");
+  });
+  it("falls back to table when a header cell is empty (no plausible header)", () => {
+    expect(classifyTable(["Bed", ""], [["1", "AB"]])).toBe("table");
   });
 });

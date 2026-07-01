@@ -29,6 +29,31 @@ describe("MobileView", () => {
   });
 });
 
+const raggedTableMd =
+  "## List\n\n| Bed | Patient | Job |\n| --- | --- | --- |\n" +
+  "| 1 | AB - bloods due, review bloods |\n| 2 | CD | Scan |\n";
+
+describe("MobileView irregular-table fallback", () => {
+  it("renders a ragged table as a real <table> with an explanatory note, not mis-mapped cards", () => {
+    render(<MobileView md={raggedTableMd} />);
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getByText(/irregular table/i)).toBeInTheDocument();
+    expect(screen.getByText("AB - bloods due, review bloods")).toBeInTheDocument();
+  });
+
+  it("still matches an irregular table's content when searched", async () => {
+    render(<MobileView md={raggedTableMd} />);
+    await userEvent.type(screen.getByRole("searchbox"), "Scan");
+    expect(screen.getByRole("table")).toBeInTheDocument();
+  });
+
+  it("hides an irregular table when the search text doesn't match", async () => {
+    render(<MobileView md={raggedTableMd} />);
+    await userEvent.type(screen.getByRole("searchbox"), "nonexistent");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+});
+
 const twoSectionMd =
   "## Bay A\n\n| Bed | Patient |\n| --- | --- |\n| 1 | Alice |\n\n" +
   "## Bay B\n\n| Bed | Patient |\n| --- | --- |\n| 1 | Zoe |\n";

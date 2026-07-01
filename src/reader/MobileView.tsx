@@ -32,11 +32,57 @@ function Cards({ headers, rows }: { headers: string[]; rows: string[][] }) {
   );
 }
 
+// Fallback rendering for a TableBlock (ragged rows or no plausible header) —
+// shown as an actual scrollable table rather than mis-mapped into labelled
+// cards, so a merged-cell artefact can never silently misattribute a value
+// to the wrong field.
+function TableFallback({ headers, rows, reason }: { headers: string[]; rows: string[][]; reason: string }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs text-gray-500">
+        Shown as original layout — irregular table ({reason})
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-max border-collapse text-sm">
+          <thead>
+            <tr>
+              {headers.map((h, i) => (
+                <th key={i} className="border px-2 py-1 text-left font-semibold">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                {row.map((c, j) => (
+                  <td key={j} className="border px-2 py-1">
+                    {c}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function tableBlockText(headers: string[], rows: string[][]): string {
+  return [headers.join(" "), ...rows.map((r) => r.join(" "))].join(" ");
+}
+
 function renderBlock(b: Block, q: string, key: number): ReactNode {
   if (b.kind === "cards") {
     const rows = filterRows(b.rows, q);
     if (rows.length === 0) return null;
     return <Cards key={key} headers={b.headers} rows={rows} />;
+  }
+  if (b.kind === "table") {
+    if (!textMatches(tableBlockText(b.headers, b.rows), q)) return null;
+    return <TableFallback key={key} headers={b.headers} rows={b.rows} reason={b.reason} />;
   }
   if (!textMatches(b.md, q)) return null;
   return (
