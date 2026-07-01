@@ -6,6 +6,7 @@ import { readBarcodes, setZXingModuleOverrides } from "zxing-wasm/reader";
 import zxingReaderWasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url";
 import { FrameDecoder } from "../core/frames";
 import { unpackEnvelope, type Envelope } from "../core/envelope";
+import { createQrDetector } from "./detectQr";
 
 setZXingModuleOverrides({
   locateFile: (path: string, prefix: string) =>
@@ -45,14 +46,33 @@ export async function decodeImageData(img: ImageData): Promise<string | null> {
   return results.length ? results[0].text : null;
 }
 
+// Torch (camera flashlight) control isn't part of the standard DOM lib's
+// MediaTrackCapabilities/MediaTrackConstraintSet types, so it's declared here
+// as a narrow extension used only for the casts below (no `any`).
+interface TorchCapabilities {
+  torch?: boolean;
+}
+interface TorchConstraintSet {
+  torch?: boolean;
+}
+
+export interface StartCameraOptions {
+  onTorchAvailable?: (toggle: (on: boolean) => Promise<void>) => void;
+}
+
 export function startCamera(
   video: HTMLVideoElement,
   onText: (t: string) => void,
+  opts?: StartCameraOptions,
 ): () => void {
   let stopped = false;
   let stream: MediaStream | null = null;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
+  // Detector is created once (below, before the loop starts) rather than
+  // per-frame — creating it repeatedly would be wasteful and, for the native
+  // BarcodeDetector path, pointless re-construction of the same detector.
+  let detect: (source: ImageData) => Promise<string | null> = decodeImageData;
 
   const tick = async () => {
     if (stopped) return;
@@ -62,7 +82,7 @@ export function startCamera(
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0);
         const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const text = await decodeImageData(img).catch(() => null);
+        const text = await detect(img).catch(() => null);
         if (text) onText(text);
       }
     } catch {
@@ -72,9 +92,19 @@ export function startCamera(
     }
   };
 
-  navigator.mediaDevices
-    .getUserMedia({ video: { facingMode: "environment" } })
-    .then((s) => {
+  Promise.all([
+    createQrDetector(),
+    navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+    }),
+  ])
+    .then(([detector, s]) => {
+      detect = detector.detect;
+
       // If stop() already ran while the permission prompt was pending,
       // don't turn the camera on — shut the returned stream down instead.
       if (stopped) {
@@ -83,13 +113,28 @@ export function startCamera(
       }
       stream = s;
       video.srcObject = s;
+
+      const track = s.getVideoTracks()[0];
+      const capabilities = track?.getCapabilities?.() as
+        | (MediaTrackCapabilities & TorchCapabilities)
+        | undefined;
+      if (capabilities?.torch) {
+        opts?.onTorchAvailable?.((on) =>
+          track.applyConstraints({
+            advanced: [
+              { torch: on } as unknown as MediaTrackConstraintSet & TorchConstraintSet,
+            ],
+          }),
+        );
+      }
+
       return video.play();
     })
     .then(() => {
       if (!stopped) requestAnimationFrame(tick);
     })
-    // A denied permission or missing camera should not surface as an
-    // unhandled promise rejection.
+    // A denied permission, missing camera, or detector-setup failure should
+    // not surface as an unhandled promise rejection.
     .catch(() => undefined);
 
   return () => {
