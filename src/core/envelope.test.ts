@@ -28,7 +28,6 @@ describe("envelope", () => {
   });
 
   it("throws EnvelopeError on unknown version", () => {
-    const bytes = packEnvelope({ ...sample, v: 1 });
     // hand-craft a wrong-version payload
     const wrong = new TextEncoder().encode(JSON.stringify({ ...sample, v: 99 }));
     expect(() => unpackEnvelope(gzipSync(wrong))).toThrow(EnvelopeError);
