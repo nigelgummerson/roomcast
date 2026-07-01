@@ -108,13 +108,11 @@ export function ReaderApp() {
   if (doc) {
     return (
       <div>
-        {doc.expiresAt != null && (
-          <ConfidentialBanner
-            profile={doc.envelope.profile}
-            expiresAt={doc.expiresAt}
-            now={now}
-          />
-        )}
+        <ConfidentialBanner
+          profile={doc.envelope.profile}
+          expiresAt={doc.expiresAt}
+          now={now}
+        />
         <div className="p-3">
           <Button variant="ghost" className="mb-3" onClick={() => setDoc(null)}>
             <IconBack size={16} /> Back
