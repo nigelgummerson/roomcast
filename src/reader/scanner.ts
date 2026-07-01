@@ -58,6 +58,10 @@ interface TorchConstraintSet {
 
 export interface StartCameraOptions {
   onTorchAvailable?: (toggle: (on: boolean) => Promise<void>) => void;
+  // Fires on a denied/missing camera or detector-setup failure, so callers
+  // can show a "permission denied" state instead of a silently frozen
+  // viewfinder.
+  onError?: (err: unknown) => void;
 }
 
 export function startCamera(
@@ -134,8 +138,11 @@ export function startCamera(
       if (!stopped) requestAnimationFrame(tick);
     })
     // A denied permission, missing camera, or detector-setup failure should
-    // not surface as an unhandled promise rejection.
-    .catch(() => undefined);
+    // not surface as an unhandled promise rejection — report it via
+    // onError (if the caller wants it) instead.
+    .catch((err: unknown) => {
+      if (!stopped) opts?.onError?.(err);
+    });
 
   return () => {
     stopped = true;
