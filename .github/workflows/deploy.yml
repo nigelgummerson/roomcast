@@ -22,6 +22,8 @@ jobs:
       - run: npm ci
       - run: npm run test           # unit tests gate the deploy
       - run: npm run test:build      # build + check-build gate
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e        # browser e2e gate (routing, pipeline round-trip, zxing decode)
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
