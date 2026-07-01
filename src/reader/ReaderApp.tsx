@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ScanSession, startCamera } from "./scanner";
-import { saveDoc, listDocs, type StoredDoc } from "../core/store";
+import { saveDoc, getDoc, listDocs, purgeExpired, type StoredDoc } from "../core/store";
 import { MobileView } from "./MobileView";
 import { ConfidentialBanner } from "./ConfidentialBanner";
 
@@ -13,9 +13,30 @@ export function ReaderApp() {
   const [saved, setSaved] = useState<StoredDoc[]>([]);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const id = setInterval(tick, 30000);
+    // Also re-check on regaining focus/visibility, so a doc that expired
+    // while the tab was backgrounded disappears as soon as it's looked at
+    // again rather than waiting for the next 30s tick.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
+
+  // Enforce expiry while a document is open: if the open doc has passed its
+  // expiry on any `now` tick, close it immediately rather than leaving the
+  // patient data on screen until the user manually navigates away.
+  useEffect(() => {
+    if (doc && doc.expiresAt <= now) {
+      setDoc(null);
+      purgeExpired(now).then(() => listDocs(now)).then(setSaved);
+    }
+  }, [doc, now]);
 
   useEffect(() => {
     listDocs(Date.now()).then(setSaved);
@@ -77,7 +98,18 @@ export function ReaderApp() {
           <ul className="divide-y">
             {saved.map((d) => (
               <li key={d.id}>
-                <button className="w-full py-2 text-left" onClick={() => setDoc(d)}>
+                <button
+                  className="w-full py-2 text-left"
+                  onClick={() => {
+                    // Re-fetch rather than trusting the last-listed copy: it may have
+                    // expired between listing and click. A null result means it's gone
+                    // — refresh the list so the stale entry drops off instead of opening.
+                    getDoc(d.id, Date.now()).then((fresh) => {
+                      if (fresh) setDoc(fresh);
+                      else listDocs(Date.now()).then(setSaved);
+                    });
+                  }}
+                >
                   {d.envelope.title}
                 </button>
               </li>
