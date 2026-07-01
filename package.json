@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "gen:fixtures": "node scripts/gen-fixtures.mjs",
+    "gen:brand": "node scripts/gen-brand.mjs",
     "build": "tsc -b && vite build",
     "build:standalone": "vite build --config vite.standalone.config.ts",
     "lint": "oxlint",

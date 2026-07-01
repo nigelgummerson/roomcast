@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { IDBFactory } from "fake-indexeddb";
 import { ReaderApp } from "./ReaderApp";
 import { saveDoc } from "../core/store";
@@ -103,6 +104,50 @@ describe("ReaderApp landing state", () => {
 
     // Settle pending async state updates to avoid act() warnings.
     await waitFor(() => {});
+  });
+});
+
+describe("ReaderApp copy management", () => {
+  it("deletes a saved copy from Your copies after confirming", async () => {
+    await saveDoc(env, Date.now());
+    render(<ReaderApp />);
+    await screen.findByText("Ward 5 handover");
+    await userEvent.click(screen.getByRole("button", { name: /delete/i }));
+
+    // Entering the confirm state replaces the row's Rename/Delete controls
+    // with the confirm prompt, so there is exactly one (distinct) Delete
+    // button — the confirm action — alongside Cancel.
+    expect(screen.getByText(/delete this copy/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /^delete$/i }));
+
+    await waitFor(() => expect(screen.queryByText("Ward 5 handover")).not.toBeInTheDocument());
+  });
+
+  it("cancelling the delete confirmation leaves the copy in place", async () => {
+    await saveDoc(env, Date.now());
+    render(<ReaderApp />);
+    await screen.findByText("Ward 5 handover");
+    await userEvent.click(screen.getByRole("button", { name: /delete/i }));
+
+    expect(screen.getByText(/delete this copy/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+    expect(screen.queryByText(/delete this copy/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Ward 5 handover")).toBeInTheDocument();
+    // No deletion occurred — confirming this is stable, not just immediately-after.
+    await waitFor(() => expect(screen.getByText("Ward 5 handover")).toBeInTheDocument());
+  });
+
+  it("renames a saved copy", async () => {
+    await saveDoc(env, Date.now());
+    render(<ReaderApp />);
+    await screen.findByText("Ward 5 handover");
+    await userEvent.click(screen.getByRole("button", { name: /rename/i }));
+    const input = screen.getByRole("textbox", { name: /title/i });
+    await userEvent.clear(input);
+    await userEvent.type(input, "Renamed");
+    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(screen.getByText("Renamed")).toBeInTheDocument());
   });
 });
 

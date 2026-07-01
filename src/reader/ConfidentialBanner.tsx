@@ -4,7 +4,7 @@ import { IconShield } from "../ui/icons";
 
 export function ConfidentialBanner({
   profile, expiresAt, now,
-}: { profile: SecurityProfile; expiresAt: number; now: number }) {
+}: { profile: SecurityProfile; expiresAt: number | null; now: number }) {
   if (profile !== "confidential") return null;
   return (
     <div

@@ -32,4 +32,9 @@ describe("envelope", () => {
     const wrong = new TextEncoder().encode(JSON.stringify({ ...sample, v: 99 }));
     expect(() => unpackEnvelope(gzipSync(wrong))).toThrow(EnvelopeError);
   });
+
+  it("round-trips a standard (never-expires) envelope with ttlHours null", () => {
+    const env = { v: 1 as const, profile: "standard" as const, ttlHours: null, title: "Rota", md: "# Rota\n" };
+    expect(unpackEnvelope(packEnvelope(env))).toEqual(env);
+  });
 });

@@ -5,7 +5,7 @@ export type SecurityProfile = "confidential" | "standard";
 export interface Envelope {
   v: 1;
   profile: SecurityProfile;
-  ttlHours: number;
+  ttlHours: number | null;
   title: string;
   md: string;
 }

@@ -18,6 +18,13 @@ if (!files.some((f) => f.startsWith("sw") && f.endsWith(".js")) &&
     !existsSync(join(dist, "sw.js")))
   errors.push("service worker missing");
 
+const manifestFile = files.find((f) => f.endsWith(".webmanifest"));
+if (manifestFile) {
+  const mf = JSON.parse(readFileSync(join(dist, manifestFile), "utf8"));
+  if (mf.name !== "RoomCast") errors.push(`manifest name is '${mf.name}', expected RoomCast`);
+}
+if (!existsSync(join(dist, "og-image.png"))) errors.push("og-image.png missing from build");
+
 if (errors.length) {
   console.error("check-build FAILED:\n" + errors.map((e) => " - " + e).join("\n"));
   process.exit(1);

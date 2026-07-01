@@ -12,14 +12,22 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "roomcast",
-        short_name: "roomcast",
-        start_url: "./#reader",
+        name: "RoomCast",
+        short_name: "RoomCast",
+        description: "Beam any document to the whole room — scan it to your phone.",
+        start_url: "./",
         display: "standalone",
+        theme_color: "#0d1b2a",
+        background_color: "#ffffff",
+        icons: [
+          { src: "pwa-192.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512.png", sizes: "512x512", type: "image/png" },
+          { src: "pwa-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
       },
       // Cache only the app shell/assets (JS/CSS/HTML/WASM) — never document payloads,
       // which live in IndexedDB and must survive independently of the SW cache.
-      workbox: { globPatterns: ["**/*.{js,css,html,wasm}"] },
+      workbox: { globPatterns: ["**/*.{js,css,html,wasm,png,svg}"] },
     }),
   ],
   test: {

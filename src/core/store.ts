@@ -5,8 +5,10 @@ export interface StoredDoc {
   id: string;
   envelope: Envelope;
   scannedAt: number;
-  expiresAt: number;
+  expiresAt: number | null;
 }
+
+const isLive = (d: StoredDoc, now: number): boolean => d.expiresAt == null || d.expiresAt > now;
 
 const DB_NAME = "roomcast";
 const STORE = "docs";
@@ -68,7 +70,7 @@ export async function saveDoc(envelope: Envelope, now: number): Promise<StoredDo
     id: `${now}-${slugify(envelope.title) || "doc"}`,
     envelope,
     scannedAt: now,
-    expiresAt: now + envelope.ttlHours * 3600e3,
+    expiresAt: envelope.ttlHours == null ? null : now + envelope.ttlHours * 3600e3,
   };
   await tx("readwrite", (s) => s.put(doc));
   return doc;
@@ -76,7 +78,7 @@ export async function saveDoc(envelope: Envelope, now: number): Promise<StoredDo
 
 export async function purgeExpired(now: number): Promise<number> {
   const docs = await allDocs();
-  const expired = docs.filter((d) => d.expiresAt <= now);
+  const expired = docs.filter((d) => d.expiresAt != null && d.expiresAt <= now);
   if (expired.length > 0) {
     await txAll("readwrite", (s) => {
       for (const d of expired) s.delete(d.id);
@@ -88,11 +90,23 @@ export async function purgeExpired(now: number): Promise<number> {
 export async function getDoc(id: string, now: number): Promise<StoredDoc | null> {
   await purgeExpired(now);
   const doc = await tx<StoredDoc | undefined>("readonly", (s) => s.get(id));
-  return doc && doc.expiresAt > now ? doc : null;
+  return doc && isLive(doc, now) ? doc : null;
 }
 
 export async function listDocs(now: number): Promise<StoredDoc[]> {
   await purgeExpired(now);
   const docs = await allDocs();
-  return docs.filter((d) => d.expiresAt > now).sort((a, b) => b.scannedAt - a.scannedAt);
+  return docs.filter((d) => isLive(d, now)).sort((a, b) => b.scannedAt - a.scannedAt);
+}
+
+export async function renameDoc(id: string, title: string, now: number): Promise<StoredDoc | null> {
+  const doc = await getDoc(id, now);
+  if (!doc) return null;
+  const updated: StoredDoc = { ...doc, envelope: { ...doc.envelope, title } };
+  await tx("readwrite", (s) => s.put(updated));
+  return updated;
+}
+
+export async function deleteDoc(id: string): Promise<void> {
+  await tx("readwrite", (s) => s.delete(id));
 }

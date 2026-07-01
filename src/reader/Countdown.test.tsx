@@ -14,4 +14,9 @@ describe("Countdown", () => {
     render(<Countdown expiresAt={1000} now={2000} />);
     expect(screen.getByText(/expired/i)).toBeInTheDocument();
   });
+
+  it("shows 'Does not expire' when there is no expiry", () => {
+    render(<Countdown expiresAt={null} now={1000} />);
+    expect(screen.getByText(/does not expire/i)).toBeInTheDocument();
+  });
 });

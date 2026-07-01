@@ -1,4 +1,5 @@
-export function formatRemaining(expiresAt: number, now: number): string {
+export function formatRemaining(expiresAt: number | null, now: number): string {
+  if (expiresAt == null) return "Does not expire";
   const ms = expiresAt - now;
   if (ms <= 0) return "expired";
   const totalMin = Math.floor(ms / 60000);
@@ -7,6 +8,6 @@ export function formatRemaining(expiresAt: number, now: number): string {
   return `expires in ${h}h ${m}m`;
 }
 
-export function Countdown({ expiresAt, now }: { expiresAt: number; now: number }) {
+export function Countdown({ expiresAt, now }: { expiresAt: number | null; now: number }) {
   return <span className="tabular-nums">{formatRemaining(expiresAt, now)}</span>;
 }
