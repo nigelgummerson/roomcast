@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { IDBFactory } from "fake-indexeddb";
 import { ReaderApp } from "./ReaderApp";
 import { saveDoc } from "../core/store";
@@ -103,6 +104,28 @@ describe("ReaderApp landing state", () => {
 
     // Settle pending async state updates to avoid act() warnings.
     await waitFor(() => {});
+  });
+});
+
+describe("ReaderApp copy management", () => {
+  it("deletes a saved copy from Your copies", async () => {
+    await saveDoc(env, Date.now());
+    render(<ReaderApp />);
+    await screen.findByText("Ward 5 handover");
+    await userEvent.click(screen.getByRole("button", { name: /delete/i }));
+    await waitFor(() => expect(screen.queryByText("Ward 5 handover")).not.toBeInTheDocument());
+  });
+
+  it("renames a saved copy", async () => {
+    await saveDoc(env, Date.now());
+    render(<ReaderApp />);
+    await screen.findByText("Ward 5 handover");
+    await userEvent.click(screen.getByRole("button", { name: /rename/i }));
+    const input = screen.getByRole("textbox", { name: /title/i });
+    await userEvent.clear(input);
+    await userEvent.type(input, "Renamed");
+    await userEvent.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(screen.getByText("Renamed")).toBeInTheDocument());
   });
 });
 

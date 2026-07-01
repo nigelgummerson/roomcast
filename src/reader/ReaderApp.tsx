@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { ScanSession, startCamera } from "./scanner";
-import { saveDoc, getDoc, listDocs, purgeExpired, type StoredDoc } from "../core/store";
+import {
+  saveDoc,
+  getDoc,
+  listDocs,
+  purgeExpired,
+  renameDoc,
+  deleteDoc,
+  type StoredDoc,
+} from "../core/store";
 import { MobileView } from "./MobileView";
 import { ConfidentialBanner } from "./ConfidentialBanner";
+import { Countdown } from "./Countdown";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Banner } from "../ui/Banner";
@@ -24,6 +33,10 @@ export function ReaderApp() {
   const [saved, setSaved] = useState<StoredDoc[]>([]);
   const [torch, setTorch] = useState<{ toggle: (on: boolean) => Promise<void> } | null>(null);
   const [torchOn, setTorchOn] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  const refresh = () => listDocs(Date.now()).then(setSaved);
 
   // Request persistent storage once on mount so saved copies survive the
   // browser's storage-eviction heuristics. Not every browser implements
@@ -188,21 +201,69 @@ export function ReaderApp() {
               </h2>
               <ul className="divide-y">
                 {saved.map((d) => (
-                  <li key={d.id}>
-                    <button
-                      className="w-full py-2 text-left"
-                      onClick={() => {
-                        // Re-fetch rather than trusting the last-listed copy: it may have
-                        // expired between listing and click. A null result means it's gone
-                        // — refresh the list so the stale entry drops off instead of opening.
-                        getDoc(d.id, Date.now()).then((fresh) => {
-                          if (fresh) setDoc(fresh);
-                          else listDocs(Date.now()).then(setSaved);
-                        });
-                      }}
-                    >
-                      {d.envelope.title}
-                    </button>
+                  <li key={d.id} className="flex items-center justify-between gap-2 py-2">
+                    <div className="min-w-0 flex-1">
+                      {editingId === d.id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            aria-label="Title"
+                            className="w-full rounded border px-2 py-1 text-sm"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                          />
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              renameDoc(d.id, editValue, Date.now()).then(() => {
+                                setEditingId(null);
+                                refresh();
+                              });
+                            }}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          className="block w-full truncate text-left"
+                          onClick={() => {
+                            // Re-fetch rather than trusting the last-listed copy: it may have
+                            // expired between listing and click. A null result means it's gone
+                            // — refresh the list so the stale entry drops off instead of opening.
+                            getDoc(d.id, Date.now()).then((fresh) => {
+                              if (fresh) setDoc(fresh);
+                              else refresh();
+                            });
+                          }}
+                        >
+                          {d.envelope.title}
+                        </button>
+                      )}
+                      <div className="text-xs text-slate-500">
+                        <Countdown expiresAt={d.expiresAt} now={now} />
+                      </div>
+                    </div>
+                    {editingId !== d.id && (
+                      <div className="flex shrink-0 gap-2">
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingId(d.id);
+                            setEditValue(d.envelope.title);
+                          }}
+                        >
+                          Rename
+                        </Button>
+                        <Button
+                          variant="danger"
+                          onClick={() => {
+                            deleteDoc(d.id).then(refresh);
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
