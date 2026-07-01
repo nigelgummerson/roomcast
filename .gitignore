@@ -3,3 +3,12 @@ data/
 .DS_Store
 node_modules/
 dist/
+dist-standalone/
+dist-ssr/
+test-results/
+playwright-report/
+.playwright/
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea

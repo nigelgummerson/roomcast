@@ -1,0 +1,75 @@
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MobileView } from "./MobileView";
+
+const md =
+  "# Ward 5\n\n## List\n\n| Bed | Patient | Job |\n| --- | --- | --- |\n" +
+  "| 1 | Alice | Bloods |\n| 2 | Bob | Scan |\n";
+
+describe("MobileView", () => {
+  it("renders each table row as a card with labelled fields", () => {
+    render(<MobileView md={md} />);
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.getByText("Bob")).toBeInTheDocument();
+    expect(screen.getAllByText("Bed").length).toBeGreaterThan(0); // label repeated per card
+  });
+
+  it("filters cards by search text", async () => {
+    render(<MobileView md={md} />);
+    await userEvent.type(screen.getByRole("searchbox"), "Alice");
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.queryByText("Bob")).not.toBeInTheDocument();
+  });
+
+  it("toggles to original layout showing a real table", async () => {
+    render(<MobileView md={md} />);
+    await userEvent.click(screen.getByRole("button", { name: /original/i }));
+    expect(screen.getByRole("table")).toBeInTheDocument();
+  });
+});
+
+const raggedTableMd =
+  "## List\n\n| Bed | Patient | Job |\n| --- | --- | --- |\n" +
+  "| 1 | AB - bloods due, review bloods |\n| 2 | CD | Scan |\n";
+
+describe("MobileView irregular-table fallback", () => {
+  it("renders a ragged table as a real <table> with an explanatory note, not mis-mapped cards", () => {
+    render(<MobileView md={raggedTableMd} />);
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getByText(/irregular table/i)).toBeInTheDocument();
+    expect(screen.getByText("AB - bloods due, review bloods")).toBeInTheDocument();
+  });
+
+  it("still matches an irregular table's content when searched", async () => {
+    render(<MobileView md={raggedTableMd} />);
+    await userEvent.type(screen.getByRole("searchbox"), "Scan");
+    expect(screen.getByRole("table")).toBeInTheDocument();
+  });
+
+  it("hides an irregular table when the search text doesn't match", async () => {
+    render(<MobileView md={raggedTableMd} />);
+    await userEvent.type(screen.getByRole("searchbox"), "nonexistent");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+});
+
+const twoSectionMd =
+  "## Bay A\n\n| Bed | Patient |\n| --- | --- |\n| 1 | Alice |\n\n" +
+  "## Bay B\n\n| Bed | Patient |\n| --- | --- |\n| 1 | Zoe |\n";
+
+describe("MobileView jump-to index filtering", () => {
+  it("shows a link for every section when there is no search query", () => {
+    render(<MobileView md={twoSectionMd} />);
+    expect(screen.getByRole("link", { name: "Bay A" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Bay B" })).toBeInTheDocument();
+  });
+
+  it("drops jump-to links for sections hidden by an active search", async () => {
+    render(<MobileView md={twoSectionMd} />);
+    await userEvent.type(screen.getByRole("searchbox"), "Alice");
+    expect(screen.getByRole("link", { name: "Bay A" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Bay B/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("Zoe")).not.toBeInTheDocument();
+  });
+});
