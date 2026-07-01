@@ -128,7 +128,9 @@ a default, so a handover is never treated casually by accident.
 
 Vitest, run via `npm test`. Coverage includes: docParser (.docx → GFM extraction),
 envelope (pack/unpack round-trip), frames (fountain encode → decode round-trip with
-simulated drops/reordering), mobiliser (table→cards, sections, search, fallback to
-"Original layout" on malformed tables), store (TTL/expiry/purge), and the App/route,
-presenter, and reader component shells. Manual-only (not unit-tested): a real projector
-+ physical phone scanning test — the true scannability/bedside-readability check.
+simulated drops/reordering), mobiliser (table→cards, sections, search); a manual
+"Original layout" toggle is always available to view the raw markdown. (Automatic
+fallback for malformed/ragged tables is planned for Task 15 — not yet implemented.)
+Store (TTL/expiry/purge), App/route, presenter, and reader component shells are tested.
+Manual-only (not unit-tested): a real projector + physical phone scanning test — the
+true scannability/bedside-readability check.

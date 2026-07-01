@@ -30,7 +30,7 @@ animated code on the presenter screen to scan it in.
 npm run build            # hosted PWA build -> dist/
 npm run build:standalone # single-file offline HTML -> dist-standalone/
 npm test                 # run the test suite
-npm run lint              # oxlint
+npm run lint             # oxlint
 ```
 
 ## Hosting

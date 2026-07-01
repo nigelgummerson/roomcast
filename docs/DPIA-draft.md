@@ -24,7 +24,7 @@ transfer of the document, a login, or paper.
 2. The document is parsed client-side into structured markdown and reflowed into a
    phone-first preview ("mobilise").
 3. The document is compressed and fountain-encoded into a stream of QR codes, animated
-   on screen (~5–10 fps) — no upload, no server round-trip.
+   on screen (8 fps, fixed) — no upload, no server round-trip.
 4. Anyone in the room scans the animated code with a phone camera, using a shared
    "reader" web page.
 5. The phone decodes enough frames to reconstruct the document locally, then stores a
