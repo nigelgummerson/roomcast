@@ -1,9 +1,13 @@
-function App() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-2xl font-semibold">Roomcast</h1>
-    </main>
-  );
-}
+import { useEffect, useState } from "react";
+import { PresenterApp } from "./presenter/PresenterApp";
+import { ReaderApp } from "./reader/ReaderApp";
 
-export default App;
+export function App() {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const on = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
+  return hash === "#reader" ? <ReaderApp /> : <PresenterApp />;
+}

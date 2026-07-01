@@ -1,6 +1,16 @@
-import { readBarcodes } from "zxing-wasm/reader";
+import { readBarcodes, setZXingModuleOverrides } from "zxing-wasm/reader";
+// zxing-wasm defaults to fetching its .wasm binary from the jsDelivr CDN
+// (https://github.com/Sec-ant/zxing-wasm#serving-via-web-or-cdn). Point it at the
+// locally bundled copy instead so it's part of the app shell that vite-plugin-pwa
+// precaches for offline use, rather than requiring network access on first scan.
+import zxingReaderWasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url";
 import { FrameDecoder } from "../core/frames";
 import { unpackEnvelope, type Envelope } from "../core/envelope";
+
+setZXingModuleOverrides({
+  locateFile: (path: string, prefix: string) =>
+    path.endsWith(".wasm") ? zxingReaderWasmUrl : prefix + path,
+});
 
 export interface ScanProgress {
   progress: number;
