@@ -43,3 +43,53 @@ to date — and all sample data in this repository — is entirely fictional.
   scanning cannot be driven headlessly by an agent. This is left for Nigel to run by
   hand, and is separately covered by the automated browser end-to-end test planned for
   Task 16. Full detail in `.superpowers/sdd/task-13-report.md`.
+
+## 2026-07-01 — Full day: build → UI overhaul → RoomCast home/branding (all LIVE)
+
+Three brainstorm→spec→plan→subagent-driven rounds, each merged via PR + CI and deployed
+to **plan.skeletalsurgery.com/roomcast/**. Specs/plans under `docs/superpowers/`.
+
+**Round 1 — initial build (PR #1).** Full offline app: core pure modules
+(envelope/docParser/frames/mobiliser/store/sanitise), scanner (camera + self-hosted
+zxing-wasm, no CDN), presenter + reader apps, hash routing, PWA offline shell + standalone
+single-file build, 15-case hostile-`.docx` corpus + hardening, GitHub Pages deploy. Added
+a `pull_request` CI workflow; bumped Actions to Node 24. Also added reciprocal
+presenter↔receiver nav links.
+
+**Round 2 — UI/UX overhaul + camera reliability (PR #4).** Spine-planner-calibrated design
+system (`src/ui/`: NHS-Blue tokens, self-hosted Inter, Button/Card/Banner/Spinner/
+ProgressRing/Toast/Feather icons); hybrid QR decoder (native BarcodeDetector →
+zxing-wasm fallback) + torch + hi-res camera; reader auto-starts the camera and shows a
+copies-first landing (loading → "Your copies" or viewfinder) + permission-denied state +
+`navigator.storage.persist()`; centred-stage projected screen with a corner "Scan to
+receive" join panel; drag-and-drop presenter setup with a phone-frame preview.
+
+**Round 3 — RoomCast home page + branding + two-model delivery (PR #5).** Two delivery
+models: **Confidential** (chosen expiry — presets 8/12/24/36 h + 1 week + a **Custom**
+free-form entry) vs **Standard** (**never expires**), via `ttlHours`/`expiresAt` =
+`number | null` (null = never), guarded at every seam; Countdown shows "Does not expire".
+"Your copies" gains **rename** and **delete** (with an inline two-step confirmation).
+**Escape** stops a broadcast; the preview is a phone-aspect **scrollable** frame.
+**Branding "RoomCast":** `src/ui/Logo.tsx` + a Playwright render script
+(`scripts/gen-brand.mjs`) producing the committed favicon / apple-touch / maskable / PWA
+icons + a 1200×630 `og-image.png`; social/OG/Twitter meta + PWA manifest name "RoomCast";
+a simplified bolder mark for legible 16/32 px favicons. A **Home** landing page now sits
+at the base route (spine-planner style) with `#present`/`#reader` sub-routes and
+brand-home links.
+
+**Explicitly out of scope:** screen-capture prevention — a web app cannot block
+screenshots/screen recording (native-only: Android FLAG_SECURE / iOS capture detection);
+recorded as a possible future native path.
+
+**State at end of day:** 104 unit tests + Playwright e2e; `build` / `build:standalone` /
+`typecheck:e2e` / `lint` all clean. Each round passed per-task reviews + a final Opus
+whole-branch review. LIVE and verified.
+
+**Deferred / follow-ups (non-blocking):** presenter "expires in Xh" note can go stale if a
+preset is changed after a file is dropped (re-drop to sync); minor a11y/docs polish; an
+optional lock-in test for the confidential+never-expires banner path; the manual
+projector + multi-phone scannability/torch test (cannot be driven headlessly).
+
+**IG constraint stands:** no real patient-identifiable data until a trust IG/Caldicott
+sign-off of `docs/DPIA-draft.md`. All development, testing, and sample data to date is
+entirely fictional.
