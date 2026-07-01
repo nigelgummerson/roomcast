@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { PresenterApp } from "./presenter/PresenterApp";
 import { ReaderApp } from "./reader/ReaderApp";
+import { ToastProvider } from "./ui/Toast";
 
 export function App() {
   const [hash, setHash] = useState(window.location.hash);
@@ -9,5 +10,9 @@ export function App() {
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);
-  return hash === "#reader" ? <ReaderApp /> : <PresenterApp />;
+  return (
+    <ToastProvider>
+      {hash === "#reader" ? <ReaderApp /> : <PresenterApp />}
+    </ToastProvider>
+  );
 }

@@ -17,6 +17,7 @@
     "test:e2e": "tsc -p tsconfig.e2e.json --noEmit && playwright test"
   },
   "dependencies": {
+    "@fontsource/inter": "5.2.8",
     "fflate": "0.8.3",
     "mammoth": "1.12.0",
     "marked": "18.0.5",

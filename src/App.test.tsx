@@ -13,6 +13,9 @@ describe("App routing", () => {
   it("shows reader on #reader", () => {
     window.location.hash = "#reader";
     render(<App />);
-    expect(screen.getByRole("button", { name: /scan a broadcast/i })).toBeInTheDocument();
+    // The reader now lands on a loading spinner (then auto-camera or "Your
+    // copies") rather than synchronously showing a "Scan a broadcast" button
+    // — assert the persistent reader shell instead of that transient state.
+    expect(screen.getByText(/presenter mode/i)).toBeInTheDocument();
   });
 });

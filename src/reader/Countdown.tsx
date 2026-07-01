@@ -8,5 +8,5 @@ export function formatRemaining(expiresAt: number, now: number): string {
 }
 
 export function Countdown({ expiresAt, now }: { expiresAt: number; now: number }) {
-  return <span>{formatRemaining(expiresAt, now)}</span>;
+  return <span className="tabular-nums">{formatRemaining(expiresAt, now)}</span>;
 }

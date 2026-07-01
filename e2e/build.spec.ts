@@ -11,13 +11,17 @@ test("presenter loads at the /roomcast/ base", async ({ page }) => {
 
 test("reader route loads", async ({ page }) => {
   await page.goto("./#reader");
-  await expect(page.getByRole("button", { name: /scan a broadcast/i })).toBeVisible();
+  // With no saved copies the reader auto-starts the camera once its initial
+  // load resolves (loading spinner -> viewfinder), which Playwright can't
+  // grant a real device for reliably. Assert the persistent reader shell —
+  // the "Presenter mode" footer link — rather than a state-specific button.
+  await expect(page.getByRole("link", { name: /presenter mode/i })).toBeVisible();
 });
 
 test("presenter links to the receiver and back", async ({ page }) => {
   await page.goto("./");
   await page.getByRole("link", { name: /receive a broadcast/i }).click();
-  await expect(page.getByRole("button", { name: /scan a broadcast/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /presenter mode/i })).toBeVisible();
   await page.getByRole("link", { name: /presenter mode/i }).click();
   await expect(page.getByRole("heading", { name: /roomcast — presenter/i })).toBeVisible();
 });

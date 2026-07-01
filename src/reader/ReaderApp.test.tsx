@@ -1,9 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { ReaderApp } from "./ReaderApp";
 import { saveDoc } from "../core/store";
 import type { Envelope } from "../core/envelope";
+
+// Mock the camera so no real getUserMedia is needed — the landing-state tests
+// only care whether startCamera was invoked, not what it does. It always
+// reports torch availability (with a no-op toggle) so the mock behaves
+// consistently across tests; only the torch test below asserts on it.
+vi.mock("./scanner", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./scanner")>();
+  const startCamera: typeof actual.startCamera = (_video, _onText, opts) => {
+    opts?.onTorchAvailable?.(async () => {});
+    return () => {};
+  };
+  return { ...actual, startCamera: vi.fn(startCamera) };
+});
 
 const HOUR = 3600e3;
 
@@ -18,6 +31,7 @@ const env: Envelope = {
 beforeEach(() => {
   // Fresh IndexedDB per test — see src/core/store.test.ts for the rationale.
   (globalThis as unknown as { indexedDB: IDBFactory }).indexedDB = new IDBFactory();
+  vi.clearAllMocks();
 });
 
 afterEach(() => {
@@ -37,7 +51,7 @@ describe("ReaderApp expiry enforcement", () => {
 
     render(<ReaderApp />);
 
-    // Seeded doc appears under "Saved copies" without any camera interaction.
+    // Seeded doc appears under "Your copies" without any camera interaction.
     const savedButton = await vi.waitFor(() =>
       screen.getByRole("button", { name: /ward 5 handover/i }),
     );
@@ -54,5 +68,63 @@ describe("ReaderApp expiry enforcement", () => {
     // flipping to "expired" while the data stays on screen.
     await vi.waitFor(() => expect(screen.queryByText("Jane Doe")).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: /scan a broadcast/i })).toBeInTheDocument();
+  });
+});
+
+describe("ReaderApp landing state", () => {
+  it("shows 'Your copies' first when a live copy exists (no auto camera)", async () => {
+    await saveDoc(env, Date.now());
+    render(<ReaderApp />);
+    await waitFor(() => expect(screen.getByText(/your copies/i)).toBeInTheDocument());
+    expect(screen.getByText("Ward 5 handover")).toBeInTheDocument();
+    const { startCamera } = await import("./scanner");
+    expect(startCamera).not.toHaveBeenCalled();
+  });
+
+  it("auto-starts the camera when there are no copies", async () => {
+    render(<ReaderApp />);
+    const { startCamera } = await import("./scanner");
+    await waitFor(() => expect(startCamera).toHaveBeenCalled());
+  });
+
+  it("synchronously shows loading indicator (not scan button) on empty store", async () => {
+    // Render with empty store (no saved docs).
+    render(<ReaderApp />);
+
+    // On first synchronous render, "Scan a broadcast" button must NOT be present yet
+    // — it should only appear after listDocs resolves. If the initial view regresses
+    // to "copies", this assertion fails and locks that regression.
+    expect(
+      screen.queryByRole("button", { name: /scan a broadcast/i }),
+    ).not.toBeInTheDocument();
+
+    // Loading status must be present (role="status" + sr-only label).
+    expect(screen.getByRole("status")).toBeInTheDocument();
+
+    // Settle pending async state updates to avoid act() warnings.
+    await waitFor(() => {});
+  });
+});
+
+describe("ReaderApp torch control", () => {
+  it("renders a torch button when startCamera reports torch availability, and wires the click", async () => {
+    const toggle = vi.fn(async () => {});
+    const { startCamera } = await import("./scanner");
+    vi.mocked(startCamera).mockImplementationOnce((_video, _onText, opts) => {
+      opts?.onTorchAvailable?.(toggle);
+      return () => {};
+    });
+
+    render(<ReaderApp />);
+
+    const torchButton = await waitFor(() =>
+      screen.getByRole("button", { name: /torch/i }),
+    );
+    expect(torchButton).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(torchButton);
+
+    expect(toggle).toHaveBeenCalledWith(true);
+    expect(torchButton).toHaveAttribute("aria-pressed", "true");
   });
 });
