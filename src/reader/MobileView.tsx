@@ -1,6 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { marked } from "marked";
 import { mobilise, type Block } from "../core/mobiliser";
+import { Card } from "../ui/Card";
+import { Button } from "../ui/Button";
+import { IconSearch, IconBack } from "../ui/icons";
 
 // Row-level filtering: a CardBlock's rows are filtered individually so a
 // section/table containing several patients can match on one and hide the
@@ -19,14 +22,14 @@ function Cards({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
     <div className="grid gap-3">
       {rows.map((row, i) => (
-        <div key={i} className="rounded-lg border p-3 shadow-sm">
+        <Card key={i} className="space-y-1">
           {headers.map((h, j) => (
             <div key={j} className="flex gap-2 text-sm">
-              <span className="font-semibold text-gray-600">{h}</span>
+              <span className="font-semibold text-slate-600">{h}</span>
               <span>{row[j] ?? ""}</span>
             </div>
           ))}
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -39,15 +42,15 @@ function Cards({ headers, rows }: { headers: string[]; rows: string[][] }) {
 function TableFallback({ headers, rows, reason }: { headers: string[]; rows: string[][]; reason: string }) {
   return (
     <div>
-      <p className="mb-1 text-xs text-gray-500">
+      <p className="mb-1 text-xs text-slate-500">
         Shown as original layout — irregular table ({reason})
       </p>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-black/10 bg-white shadow-sm">
         <table className="w-full min-w-max border-collapse text-sm">
           <thead>
             <tr>
               {headers.map((h, i) => (
-                <th key={i} className="border px-2 py-1 text-left font-semibold">
+                <th key={i} className="border-b border-black/10 px-2 py-1 text-left font-semibold text-slate-700">
                   {h}
                 </th>
               ))}
@@ -55,9 +58,9 @@ function TableFallback({ headers, rows, reason }: { headers: string[]; rows: str
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i}>
+              <tr key={i} className="odd:bg-slate-50">
                 {row.map((c, j) => (
-                  <td key={j} className="border px-2 py-1">
+                  <td key={j} className="border-b border-black/5 px-2 py-1">
                     {c}
                   </td>
                 ))}
@@ -102,9 +105,9 @@ export function MobileView({ md }: { md: string }) {
   if (original) {
     return (
       <div>
-        <button className="mb-3 underline" onClick={() => setOriginal(false)}>
-          Mobile view
-        </button>
+        <Button variant="ghost" className="mb-3" onClick={() => setOriginal(false)}>
+          <IconBack size={16} /> Mobile view
+        </Button>
         <div
           className="prose max-w-none overflow-x-auto"
           dangerouslySetInnerHTML={{ __html: marked.parse(md, { async: false }) }}
@@ -130,23 +133,33 @@ export function MobileView({ md }: { md: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <input
-          type="search"
-          role="searchbox"
-          placeholder="Search…"
-          className="flex-1 rounded border px-2 py-1"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <button className="underline" onClick={() => setOriginal(true)}>
+        <div className="relative flex-1">
+          <IconSearch
+            size={16}
+            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            type="search"
+            role="searchbox"
+            placeholder="Search…"
+            className="w-full rounded-lg border border-black/10 bg-white py-2 pl-8 pr-2 text-sm shadow-sm"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+        <Button variant="ghost" onClick={() => setOriginal(true)}>
           Original layout
-        </button>
+        </Button>
       </div>
 
       {vm.index.length > 1 && (
         <nav className="flex flex-wrap gap-2 text-sm">
           {indexItems.map((it) => (
-            <a key={it.id} href={`#${it.id}`} className="text-blue-600 underline">
+            <a
+              key={it.id}
+              href={`#${it.id}`}
+              className="rounded-full border border-[var(--rc-accent)] px-3 py-1 text-xs font-medium text-[var(--rc-accent)] hover:bg-[var(--rc-accent)]/10"
+            >
               {it.title}
             </a>
           ))}
@@ -157,7 +170,7 @@ export function MobileView({ md }: { md: string }) {
         if (q && !visible) return null;
         return (
           <section key={s.id} id={s.id} className="space-y-3">
-            {s.title && <h2 className="text-lg font-bold">{s.title}</h2>}
+            {s.title && <h2 className="text-lg font-semibold text-slate-900">{s.title}</h2>}
             {rendered}
           </section>
         );
