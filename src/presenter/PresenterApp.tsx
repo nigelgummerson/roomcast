@@ -10,6 +10,7 @@ import { Card } from "../ui/Card";
 import { Banner } from "../ui/Banner";
 import { useToast } from "../ui/Toast";
 import { FOUNTAIN_ECC, FOUNTAIN_FPS, fountainQrSize } from "./qrTuning";
+import { TTL_PRESETS, DEFAULT_TTL, resolveTtlHours, type TtlChoice } from "./ttl";
 
 // Soft cap on the packed envelope size before the presenter warns that
 // scanning will take longer (more QR frames to loop through). Not a hard
@@ -19,7 +20,8 @@ export const DEFAULT_SIZE_WARN_BYTES = 40_000;
 export function PresenterApp() {
   const [title, setTitle] = useState("Handover");
   const [profile, setProfile] = useState<SecurityProfile>("confidential");
-  const [ttlHours, setTtlHours] = useState(36);
+  const [choice, setChoice] = useState<TtlChoice>(DEFAULT_TTL);
+  const [customHours, setCustomHours] = useState("");
   const [md, setMd] = useState<string | null>(null);
   const [frames, setFrames] = useState<string[]>([]);
   const [sizeBytes, setSizeBytes] = useState(0);
@@ -34,6 +36,8 @@ export function PresenterApp() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [broadcasting]);
+
+  const ttlHours = resolveTtlHours(profile, choice, customHours);
 
   const onFile = async (file: File) => {
     try {
@@ -50,6 +54,15 @@ export function PresenterApp() {
       showToast("Could not read this file — please supply a .docx (not .doc)", { severity: "error" });
     }
   };
+
+  useEffect(() => {
+    if (!broadcasting) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setBroadcasting(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [broadcasting]);
 
   if (broadcasting) {
     const readerUrl = `${location.origin}${location.pathname}#reader`;
@@ -111,7 +124,7 @@ export function PresenterApp() {
               variant={profile === "confidential" ? "primary" : "ghost"}
               onClick={() => setProfile("confidential")}
             >
-              Confidential (36h, scan-only)
+              Confidential
             </Button>
             <Button
               type="button"
@@ -123,10 +136,36 @@ export function PresenterApp() {
           </div>
         </div>
 
-        <label className="block">Expiry (hours)
-          <input type="number" className="mt-1 w-full rounded border px-2 py-1"
-            value={ttlHours} onChange={(e) => setTtlHours(Number(e.target.value))} />
-        </label>
+        {profile === "confidential" && (
+          <div>
+            <span className="block text-sm font-medium text-slate-700">Expires after</span>
+            <div className="mt-1 inline-flex flex-wrap gap-2">
+              {TTL_PRESETS.map((hours) => (
+                <Button
+                  key={hours}
+                  type="button"
+                  variant={choice === hours ? "primary" : "ghost"}
+                  onClick={() => setChoice(hours)}
+                >
+                  {hours === 168 ? "1 week" : `${hours}h`}
+                </Button>
+              ))}
+              <Button
+                type="button"
+                variant={choice === "custom" ? "primary" : "ghost"}
+                onClick={() => setChoice("custom")}
+              >
+                Custom…
+              </Button>
+            </div>
+            {choice === "custom" && (
+              <label className="mt-2 block max-w-[10rem]">Hours
+                <input type="number" min={1} className="mt-1 w-full rounded border px-2 py-1"
+                  value={customHours} onChange={(e) => setCustomHours(e.target.value)} />
+              </label>
+            )}
+          </div>
+        )}
 
         <DropZone onFile={onFile} />
       </Card>
@@ -134,7 +173,7 @@ export function PresenterApp() {
       {md && (
         <Card className="space-y-3">
           <h2 className="font-semibold">Preview (as phones will see it)</h2>
-          <div className="mx-auto w-[320px] rounded-2xl border-4 border-slate-800 bg-white p-3 shadow-lg">
+          <div className="mx-auto w-[300px] aspect-[9/19.5] overflow-y-auto rounded-2xl border-4 border-slate-800 bg-white p-2">
             <MobileView md={md} />
           </div>
           {sizeBytes > DEFAULT_SIZE_WARN_BYTES && (
