@@ -6,10 +6,16 @@ import { saveDoc } from "../core/store";
 import type { Envelope } from "../core/envelope";
 
 // Mock the camera so no real getUserMedia is needed — the landing-state tests
-// only care whether startCamera was invoked, not what it does.
+// only care whether startCamera was invoked, not what it does. It always
+// reports torch availability (with a no-op toggle) so the mock behaves
+// consistently across tests; only the torch test below asserts on it.
 vi.mock("./scanner", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./scanner")>();
-  return { ...actual, startCamera: vi.fn(() => () => {}) };
+  const startCamera: typeof actual.startCamera = (_video, _onText, opts) => {
+    opts?.onTorchAvailable?.(async () => {});
+    return () => {};
+  };
+  return { ...actual, startCamera: vi.fn(startCamera) };
 });
 
 const HOUR = 3600e3;
@@ -97,5 +103,28 @@ describe("ReaderApp landing state", () => {
 
     // Settle pending async state updates to avoid act() warnings.
     await waitFor(() => {});
+  });
+});
+
+describe("ReaderApp torch control", () => {
+  it("renders a torch button when startCamera reports torch availability, and wires the click", async () => {
+    const toggle = vi.fn(async () => {});
+    const { startCamera } = await import("./scanner");
+    vi.mocked(startCamera).mockImplementationOnce((_video, _onText, opts) => {
+      opts?.onTorchAvailable?.(toggle);
+      return () => {};
+    });
+
+    render(<ReaderApp />);
+
+    const torchButton = await waitFor(() =>
+      screen.getByRole("button", { name: /torch/i }),
+    );
+    expect(torchButton).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(torchButton);
+
+    expect(toggle).toHaveBeenCalledWith(true);
+    expect(torchButton).toHaveAttribute("aria-pressed", "true");
   });
 });

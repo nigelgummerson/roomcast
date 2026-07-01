@@ -8,7 +8,7 @@ import { Card } from "../ui/Card";
 import { Banner } from "../ui/Banner";
 import { ProgressRing } from "../ui/ProgressRing";
 import { Spinner } from "../ui/Spinner";
-import { IconBack, IconCamera, IconShield } from "../ui/icons";
+import { IconBack, IconCamera, IconShield, IconTorch } from "../ui/icons";
 
 type View = "loading" | "copies" | "scanning" | "denied";
 
@@ -22,6 +22,8 @@ export function ReaderApp() {
   const [doc, setDoc] = useState<StoredDoc | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [saved, setSaved] = useState<StoredDoc[]>([]);
+  const [torch, setTorch] = useState<{ toggle: (on: boolean) => Promise<void> } | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
 
   // Request persistent storage once on mount so saved copies survive the
   // browser's storage-eviction heuristics. Not every browser implements
@@ -89,9 +91,18 @@ export function ReaderApp() {
           });
         }
       },
-      { onError: () => setView("denied") },
+      {
+        onTorchAvailable: (toggle) => setTorch({ toggle }),
+        onError: () => setView("denied"),
+      },
     );
-    return stop;
+    return () => {
+      stop();
+      // Torch is a property of the camera session that just ended — don't let
+      // a stale toggle/on-state linger into the next scan or view.
+      setTorch(null);
+      setTorchOn(false);
+    };
   }, [view]);
 
   if (doc) {
@@ -134,6 +145,19 @@ export function ReaderApp() {
             <div className="pointer-events-none absolute bottom-3 right-3 text-white">
               <ProgressRing value={progress} size={48} />
             </div>
+            {torch && (
+              <Button
+                variant="ghost"
+                className="absolute bottom-3 left-3"
+                aria-pressed={torchOn}
+                onClick={() => {
+                  void torch.toggle(!torchOn);
+                  setTorchOn((v) => !v);
+                }}
+              >
+                <IconTorch size={16} /> Torch
+              </Button>
+            )}
           </div>
           <p className="text-center text-sm text-slate-600">Point at the code</p>
           {saved.length > 0 && (
