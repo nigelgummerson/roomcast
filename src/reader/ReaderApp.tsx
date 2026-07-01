@@ -15,6 +15,7 @@ import { Countdown } from "./Countdown";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Banner } from "../ui/Banner";
+import { Logo } from "../ui/Logo";
 import { ProgressRing } from "../ui/ProgressRing";
 import { Spinner } from "../ui/Spinner";
 import { IconBack, IconCamera, IconShield, IconTorch } from "../ui/icons";
@@ -139,8 +140,10 @@ export function ReaderApp() {
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-baseline justify-between gap-4">
-        <h1 className="text-xl font-bold">roomcast</h1>
-        <a href="#" className="text-sm text-blue-600 underline">← Presenter mode</a>
+        <a href="#home" className="flex items-center gap-2 font-semibold">
+          <Logo size={24} />
+          RoomCast
+        </a>
       </div>
 
       {view === "loading" ? (

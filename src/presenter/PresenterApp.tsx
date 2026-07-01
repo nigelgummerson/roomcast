@@ -8,6 +8,7 @@ import type { SecurityProfile } from "../core/envelope";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Banner } from "../ui/Banner";
+import { Logo } from "../ui/Logo";
 import { useToast } from "../ui/Toast";
 import { FOUNTAIN_ECC, FOUNTAIN_FPS, fountainQrSize } from "./qrTuning";
 import { TTL_PRESETS, DEFAULT_TTL, resolveTtlHours, type TtlChoice } from "./ttl";
@@ -104,10 +105,11 @@ export function PresenterApp() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-6">
       <div className="flex items-baseline justify-between gap-4">
-        <h1 className="text-2xl font-bold">roomcast — presenter</h1>
-        <a href="#reader" className="text-sm text-blue-600 underline">
-          Receive a broadcast on this device →
+        <a href="#home" className="flex items-center gap-2 font-semibold">
+          <Logo size={24} />
+          RoomCast
         </a>
+        <h1 className="text-sm font-medium text-slate-500">Presenter</h1>
       </div>
 
       <Card className="space-y-4">
