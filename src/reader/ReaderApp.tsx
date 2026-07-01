@@ -7,13 +7,17 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Banner } from "../ui/Banner";
 import { ProgressRing } from "../ui/ProgressRing";
+import { Spinner } from "../ui/Spinner";
 import { IconBack, IconCamera, IconShield } from "../ui/icons";
 
-type View = "copies" | "scanning" | "denied";
+type View = "loading" | "copies" | "scanning" | "denied";
 
 export function ReaderApp() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [view, setView] = useState<View>("copies");
+  // Starts as "loading" (not "copies") so a brand-new user never sees the
+  // "Scan a broadcast" button flash before we know whether they have any
+  // saved copies — see the listDocs effect below.
+  const [view, setView] = useState<View>("loading");
   const [progress, setProgress] = useState(0);
   const [doc, setDoc] = useState<StoredDoc | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -26,14 +30,15 @@ export function ReaderApp() {
     void navigator.storage?.persist?.();
   }, []);
 
-  // Decide the initial landing state: returning users with a live copy see
-  // it first (the "copies" default), rather than being dropped straight into
-  // the camera. Only flip to "scanning" once we've confirmed the store is
-  // empty — a returning user is never auto-switched away from their list.
+  // Decide the initial landing state once listDocs resolves: a returning
+  // user with a live copy lands on "copies"; a first-time/empty user goes
+  // straight to "scanning" (the camera). Until this resolves the view stays
+  // "loading" (a spinner), so neither state flashes before we know which one
+  // applies.
   useEffect(() => {
     listDocs(Date.now()).then((docs) => {
       setSaved(docs);
-      if (docs.length === 0) setView("scanning");
+      setView(docs.length === 0 ? "scanning" : "copies");
     });
   }, []);
 
@@ -114,7 +119,11 @@ export function ReaderApp() {
         <a href="#" className="text-sm text-blue-600 underline">← Presenter mode</a>
       </div>
 
-      {view === "scanning" ? (
+      {view === "loading" ? (
+        <div className="flex justify-center py-12" role="status" aria-label="Loading">
+          <Spinner size={32} />
+        </div>
+      ) : view === "scanning" ? (
         <div className="space-y-3">
           <div className="relative overflow-hidden rounded-lg bg-black">
             <video ref={videoRef} className="w-full" muted playsInline />
