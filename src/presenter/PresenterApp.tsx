@@ -12,6 +12,7 @@ import { Logo } from "../ui/Logo";
 import { useToast } from "../ui/Toast";
 import { FOUNTAIN_ECC, FOUNTAIN_FPS, fountainQrSize } from "./qrTuning";
 import { TTL_PRESETS, DEFAULT_TTL, resolveTtlHours, type TtlChoice } from "./ttl";
+import { defaultHandoverTitle } from "./defaultTitle";
 
 // Soft cap on the packed envelope size before the presenter warns that
 // scanning will take longer (more QR frames to loop through). Not a hard
@@ -19,7 +20,7 @@ import { TTL_PRESETS, DEFAULT_TTL, resolveTtlHours, type TtlChoice } from "./ttl
 export const DEFAULT_SIZE_WARN_BYTES = 40_000;
 
 export function PresenterApp() {
-  const [title, setTitle] = useState("Handover");
+  const [title, setTitle] = useState(() => defaultHandoverTitle(new Date()));
   const [profile, setProfile] = useState<SecurityProfile>("confidential");
   const [choice, setChoice] = useState<TtlChoice>(DEFAULT_TTL);
   const [customHours, setCustomHours] = useState("");
