@@ -67,6 +67,20 @@ export function MobileView({ md }: { md: string }) {
     );
   }
 
+  // Render each section's blocks once, and derive which sections still have
+  // visible content for the active query. The jump-to index reuses this same
+  // visibility result so it never links to a section that has been filtered
+  // out of the DOM.
+  const sectionRenders = vm.sections.map((s) => {
+    const rendered = s.blocks.map((b, i) => renderBlock(b, q, i));
+    const visible = !q || rendered.some((el) => el !== null);
+    return { section: s, rendered, visible };
+  });
+  const visibleIds = new Set(
+    sectionRenders.filter((r) => r.visible).map((r) => r.section.id),
+  );
+  const indexItems = q ? vm.index.filter((it) => visibleIds.has(it.id)) : vm.index;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -85,7 +99,7 @@ export function MobileView({ md }: { md: string }) {
 
       {vm.index.length > 1 && (
         <nav className="flex flex-wrap gap-2 text-sm">
-          {vm.index.map((it) => (
+          {indexItems.map((it) => (
             <a key={it.id} href={`#${it.id}`} className="text-blue-600 underline">
               {it.title}
             </a>
@@ -93,9 +107,8 @@ export function MobileView({ md }: { md: string }) {
         </nav>
       )}
 
-      {vm.sections.map((s) => {
-        const rendered = s.blocks.map((b, i) => renderBlock(b, q, i));
-        if (q && rendered.every((el) => el === null)) return null;
+      {sectionRenders.map(({ section: s, rendered, visible }) => {
+        if (q && !visible) return null;
         return (
           <section key={s.id} id={s.id} className="space-y-3">
             {s.title && <h2 className="text-lg font-bold">{s.title}</h2>}

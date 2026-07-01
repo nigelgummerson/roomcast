@@ -28,3 +28,23 @@ describe("MobileView", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 });
+
+const twoSectionMd =
+  "## Bay A\n\n| Bed | Patient |\n| --- | --- |\n| 1 | Alice |\n\n" +
+  "## Bay B\n\n| Bed | Patient |\n| --- | --- |\n| 1 | Zoe |\n";
+
+describe("MobileView jump-to index filtering", () => {
+  it("shows a link for every section when there is no search query", () => {
+    render(<MobileView md={twoSectionMd} />);
+    expect(screen.getByRole("link", { name: "Bay A" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Bay B" })).toBeInTheDocument();
+  });
+
+  it("drops jump-to links for sections hidden by an active search", async () => {
+    render(<MobileView md={twoSectionMd} />);
+    await userEvent.type(screen.getByRole("searchbox"), "Alice");
+    expect(screen.getByRole("link", { name: "Bay A" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Bay B/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("Zoe")).not.toBeInTheDocument();
+  });
+});
