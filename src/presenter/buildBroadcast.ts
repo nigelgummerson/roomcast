@@ -4,7 +4,7 @@ import { encodeToFrames } from "../core/frames";
 
 export async function buildBroadcast(
   file: ArrayBuffer,
-  opts: { title: string; profile: SecurityProfile; ttlHours: number },
+  opts: { title: string; profile: SecurityProfile; ttlHours: number | null },
 ): Promise<{ md: string; frames: string[]; sizeBytes: number }> {
   const md = await docxToMarkdown(file);
   const envelope: Envelope = { v: 1, md, ...opts };

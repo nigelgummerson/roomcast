@@ -68,7 +68,7 @@ export async function saveDoc(envelope: Envelope, now: number): Promise<StoredDo
     id: `${now}-${slugify(envelope.title) || "doc"}`,
     envelope,
     scannedAt: now,
-    expiresAt: now + envelope.ttlHours * 3600e3,
+    expiresAt: envelope.ttlHours === null ? Infinity : now + envelope.ttlHours * 3600e3,
   };
   await tx("readwrite", (s) => s.put(doc));
   return doc;

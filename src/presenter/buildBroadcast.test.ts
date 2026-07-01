@@ -31,4 +31,14 @@ describe("buildBroadcast", () => {
     const expected = packEnvelope({ v: 1, md, ...opts });
     expect(sizeBytes).toBe(expected.length);
   });
+
+  it("carries ttlHours null (standard) into the reconstructed envelope", async () => {
+    vi.spyOn(parser, "docxToMarkdown").mockResolvedValue("# Rota\n\nx\n");
+    const { md, frames } = await buildBroadcast(new ArrayBuffer(0), {
+      title: "Rota", profile: "standard", ttlHours: null,
+    });
+    const s = new ScanSession();
+    for (const f of frames) if (s.feed(f).done) break;
+    expect(s.envelope()).toEqual({ v: 1, profile: "standard", ttlHours: null, title: "Rota", md });
+  });
 });
