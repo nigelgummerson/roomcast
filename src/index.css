@@ -1,1 +1,29 @@
 @import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+
+:root {
+  --rc-accent: #005eb8;         /* NHS Blue */
+  --rc-accent-hover: #004a94;
+  --app-height: 100vh;          /* overwritten by installAppHeight */
+  --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", sans-serif;
+}
+
+html, body, #root { height: 100%; }
+body {
+  font-family: var(--ui-font);
+  background: #f1f5f9;
+  color: #1d1d1f;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: none; } }
+.animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+
+:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
