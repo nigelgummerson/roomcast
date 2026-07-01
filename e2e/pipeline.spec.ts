@@ -12,7 +12,13 @@ import { test, expect } from "@playwright/test";
 test("pipeline round-trips in a real browser (Buffer/qrloop/fflate bundled)", async ({ page }) => {
   await page.goto("./");
   const ok = await page.evaluate(async () => {
-    const mod = await import("/roomcast/e2e/support/pipeline.ts");
+    // The dev server serves this file at a URL, not a filesystem path tsc can
+    // resolve, so the specifier is passed through a variable (module
+    // resolution only applies to string-literal import() specifiers) and the
+    // shape is pinned to the real module via a type-only `typeof import()` of
+    // the relative path — no `any` involved.
+    const modPath = "/roomcast/e2e/support/pipeline.ts";
+    const mod: typeof import("./support/pipeline") = await import(modPath);
     return mod.roundTrip();
   });
   expect(ok).toBe(true);
@@ -21,7 +27,9 @@ test("pipeline round-trips in a real browser (Buffer/qrloop/fflate bundled)", as
 test("a rendered QR frame decodes via zxing-wasm in-browser", async ({ page }) => {
   await page.goto("./");
   const text = await page.evaluate(async () => {
-    const mod = await import("/roomcast/e2e/support/pipeline.ts");
+    // See the sibling test above for why this is a variable + type-only import().
+    const modPath = "/roomcast/e2e/support/pipeline.ts";
+    const mod: typeof import("./support/pipeline") = await import(modPath);
     return mod.decodeRenderedQr("roomcast-e2e");
   });
   expect(text).toBe("roomcast-e2e");
