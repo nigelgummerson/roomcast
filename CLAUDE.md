@@ -93,3 +93,20 @@ projector + multi-phone scannability/torch test (cannot be driven headlessly).
 **IG constraint stands:** no real patient-identifiable data until a trust IG/Caldicott
 sign-off of `docs/DPIA-draft.md`. All development, testing, and sample data to date is
 entirely fictional.
+
+## 2026-07-02 — Cross-navigation polish (branch `feat/nav-links`)
+
+Small wayfinding fixes so the two entry paths are always reachable and the confusion
+between "present" and "receive" is removed:
+
+- **Home header:** added a ghost **Receive** button (→ `#reader`) next to the primary
+  **Present** button (→ `#present`), so both paths sit side by side. Kept the label
+  "Present" (the hero already reads "Broadcast a document"; considered
+  "Present (Broadcast)" but rejected as redundant).
+- **Presenter page:** added a **Receive** link (→ `#reader`) beside the "Presenter" label.
+- **Reader page:** added a **Present** link (→ `#present`) in the header.
+- **Home footer:** removed the "Source on GitHub" link.
+- Updated `HomePage.test.tsx` for the second "Receive" link (assert all `/receive/i`
+  links point to `#reader`, plus the header "Present" link → `#present`).
+
+**Verification:** `npm test` (105 pass) and `npm run build` both green.

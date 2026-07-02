@@ -26,9 +26,14 @@ export function HomePage() {
           <Logo size={28} />
           RoomCast
         </a>
-        <a href="#present" className={buttonClasses("primary")}>
-          Present
-        </a>
+        <div className="flex items-center gap-2">
+          <a href="#present" className={buttonClasses("primary")}>
+            Present
+          </a>
+          <a href="#reader" className={buttonClasses("ghost")}>
+            Receive
+          </a>
+        </div>
       </header>
 
       <main className="mx-auto max-w-4xl space-y-12 px-6 pb-16">
@@ -80,14 +85,6 @@ export function HomePage() {
 
       <footer className="mx-auto max-w-4xl space-y-1 px-6 py-8 text-center text-xs text-slate-500">
         <p>Developed in Leeds.</p>
-        <p>
-          <a
-            href="https://github.com/nigelgummerson/roomcast"
-            className="underline hover:text-slate-700"
-          >
-            Source on GitHub
-          </a>
-        </p>
       </footer>
     </div>
   );
