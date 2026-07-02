@@ -145,6 +145,9 @@ export function ReaderApp() {
           <Logo size={24} />
           RoomCast
         </a>
+        <a href="#present" className="text-sm font-medium text-[var(--rc-accent)] hover:underline">
+          Present
+        </a>
       </div>
 
       {view === "loading" ? (

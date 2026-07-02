@@ -110,7 +110,12 @@ export function PresenterApp() {
           <Logo size={24} />
           RoomCast
         </a>
-        <h1 className="text-sm font-medium text-slate-500">Presenter</h1>
+        <div className="flex items-baseline gap-4">
+          <h1 className="text-sm font-medium text-slate-500">Presenter</h1>
+          <a href="#reader" className="text-sm font-medium text-[var(--rc-accent)] hover:underline">
+            Receive
+          </a>
+        </div>
       </div>
 
       <Card className="space-y-4">
