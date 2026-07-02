@@ -1,11 +1,19 @@
 /// <reference types="vitest/config" />
+import { readFileSync } from "node:fs";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Single source of truth for the app version: package.json. Injected as the
+// __APP_VERSION__ global (see src/global.d.ts) so it stays in sync with npm.
+const appVersion = JSON.parse(
+  readFileSync(new URL("./package.json", import.meta.url), "utf8"),
+).version;
+
 export default defineConfig({
   base: "/roomcast/", // served at plan.skeletalsurgery.com/roomcast/ (GitHub Pages project path)
+  define: { __APP_VERSION__: JSON.stringify(appVersion) },
   plugins: [
     react(),
     nodePolyfills({ include: ["buffer"] }),

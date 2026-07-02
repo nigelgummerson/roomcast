@@ -47,6 +47,20 @@ export function ReaderApp() {
     void navigator.storage?.persist?.();
   }, []);
 
+  // Escape bails out of the reader back to the presenter home (#present),
+  // mirroring the presenter's Escape-to-exit. Ignored while typing in a field
+  // (e.g. renaming a copy) so an in-progress edit isn't lost.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      window.location.hash = "present";
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // Decide the initial landing state once listDocs resolves: a returning
   // user with a live copy lands on "copies"; a first-time/empty user goes
   // straight to "scanning" (the camera). Until this resolves the view stays

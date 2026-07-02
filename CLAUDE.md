@@ -110,3 +110,23 @@ between "present" and "receive" is removed:
   links point to `#reader`, plus the header "Present" link → `#present`).
 
 **Verification:** `npm test` (105 pass) and `npm run build` both green.
+
+Merged to `main` as PR #7 (squash). **Workflow change:** from here on this is a
+solo-dev repo with **no PRs** — commit straight to `main`, push, deploy runs on push.
+Run `npm test` locally before pushing for the same gate CI gave.
+
+## 2026-07-02 — Escape-to-exit + version system (on `main`)
+
+- **Escape bail-out:** pressing **Escape** in the reader (`#reader`) now navigates back
+  to the presenter home (`#present`), mirroring the presenter's existing Escape (which
+  stops a live broadcast and lands on `#present`). The reader handler ignores Escape
+  while a text field is focused (e.g. renaming a copy) so an in-progress edit isn't lost.
+  `src/reader/ReaderApp.tsx`.
+- **Version system:** `package.json` version set to **`1.0.0-beta`** as the single source
+  of truth; injected at build time as the `__APP_VERSION__` global via `define` in **both**
+  `vite.config.ts` and `vite.standalone.config.ts` (declared in `src/global.d.ts`, exposed
+  through `src/version.ts` as `APP_VERSION`). Displayed as `v1.0.0-beta` in the home-page
+  footer. To bump the version, edit only `package.json`. Tagged `v1.0.0-beta`.
+
+**Verification:** `npm test` (105 pass), `npm run build`, `npm run build:standalone` all
+green; version string confirmed baked into `dist/` and `dist-standalone/` output.
