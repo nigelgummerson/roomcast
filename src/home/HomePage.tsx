@@ -2,7 +2,7 @@ import { Logo } from "../ui/Logo";
 import { buttonClasses } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { IconCamera, IconShield } from "../ui/icons";
-import { APP_VERSION } from "../version";
+import { APP_VERSION_DISPLAY } from "../version";
 
 const STEPS = [
   {
@@ -86,7 +86,7 @@ export function HomePage() {
 
       <footer className="mx-auto max-w-4xl space-y-1 px-6 py-8 text-center text-xs text-slate-500">
         <p>Developed in Leeds.</p>
-        <p>v{APP_VERSION}</p>
+        <p>v{APP_VERSION_DISPLAY}</p>
       </footer>
     </div>
   );
