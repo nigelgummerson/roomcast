@@ -96,53 +96,66 @@ export function startCamera(
     }
   };
 
-  Promise.all([
-    createQrDetector(),
-    navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "environment",
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-    }),
-  ])
-    .then(([detector, s]) => {
-      detect = detector.detect;
+  // Run inside an async fn so that a *synchronous* failure — e.g. some iOS
+  // WebViews leave `navigator.mediaDevices` undefined, making
+  // `mediaDevices.getUserMedia(...)` throw a TypeError before any promise even
+  // exists — is turned into a rejection and reaches onError, rather than
+  // escaping as an uncaught throw that leaves a silent black viewfinder.
+  const run = async () => {
+    const md = navigator.mediaDevices;
+    if (!md || typeof md.getUserMedia !== "function") {
+      throw new Error(
+        `Camera API unavailable (mediaDevices=${md ? "present" : "missing"}, ` +
+          `secureContext=${window.isSecureContext}). On iOS, only Safari can use ` +
+          `the camera in some setups — try opening this page in Safari.`,
+      );
+    }
 
-      // If stop() already ran while the permission prompt was pending,
-      // don't turn the camera on — shut the returned stream down instead.
-      if (stopped) {
-        s.getTracks().forEach((t) => t.stop());
-        return;
-      }
-      stream = s;
-      video.srcObject = s;
+    const [detector, s] = await Promise.all([
+      createQrDetector(),
+      md.getUserMedia({
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      }),
+    ]);
+    detect = detector.detect;
 
-      const track = s.getVideoTracks()[0];
-      const capabilities = track?.getCapabilities?.() as
-        | (MediaTrackCapabilities & TorchCapabilities)
-        | undefined;
-      if (capabilities?.torch) {
-        opts?.onTorchAvailable?.((on) =>
-          track.applyConstraints({
-            advanced: [
-              { torch: on } as unknown as MediaTrackConstraintSet & TorchConstraintSet,
-            ],
-          }),
-        );
-      }
+    // If stop() already ran while the permission prompt was pending,
+    // don't turn the camera on — shut the returned stream down instead.
+    if (stopped) {
+      s.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    stream = s;
+    video.srcObject = s;
 
-      return video.play();
-    })
-    .then(() => {
-      if (!stopped) requestAnimationFrame(tick);
-    })
-    // A denied permission, missing camera, or detector-setup failure should
-    // not surface as an unhandled promise rejection — report it via
-    // onError (if the caller wants it) instead.
-    .catch((err: unknown) => {
-      if (!stopped) opts?.onError?.(err);
-    });
+    const track = s.getVideoTracks()[0];
+    const capabilities = track?.getCapabilities?.() as
+      | (MediaTrackCapabilities & TorchCapabilities)
+      | undefined;
+    if (capabilities?.torch) {
+      opts?.onTorchAvailable?.((on) =>
+        track.applyConstraints({
+          advanced: [
+            { torch: on } as unknown as MediaTrackConstraintSet & TorchConstraintSet,
+          ],
+        }),
+      );
+    }
+
+    await video.play();
+    if (!stopped) requestAnimationFrame(tick);
+  };
+
+  // A denied permission, missing camera, unavailable API, or detector-setup
+  // failure should not surface as an unhandled rejection — report it via
+  // onError (if the caller wants it) instead.
+  run().catch((err: unknown) => {
+    if (!stopped) opts?.onError?.(err);
+  });
 
   return () => {
     stopped = true;

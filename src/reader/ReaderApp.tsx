@@ -38,6 +38,7 @@ export function ReaderApp() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   const refresh = () => listDocs(Date.now()).then(setSaved);
 
@@ -110,6 +111,7 @@ export function ReaderApp() {
   useEffect(() => {
     if (view !== "scanning" || !videoRef.current) return;
     setProgress(0);
+    setCameraError(null);
     const session = new ScanSession();
     const stop = startCamera(
       videoRef.current,
@@ -126,7 +128,12 @@ export function ReaderApp() {
       },
       {
         onTorchAvailable: (toggle) => setTorch({ toggle }),
-        onError: () => setView("denied"),
+        onError: (err) => {
+          setCameraError(
+            err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+          );
+          setView("denied");
+        },
       },
     );
     return () => {
@@ -209,6 +216,11 @@ export function ReaderApp() {
           <Banner severity="hard">
             Camera access was denied — roomcast needs the camera to scan a broadcast.
           </Banner>
+          {cameraError && (
+            <p className="break-words rounded bg-slate-100 p-2 font-mono text-xs text-slate-700">
+              {cameraError}
+            </p>
+          )}
           <Button onClick={() => setView("scanning")}>
             <IconCamera size={16} /> Enable camera
           </Button>
