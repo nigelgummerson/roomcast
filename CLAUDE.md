@@ -28,23 +28,23 @@ It was never an app-capability limit.
    was already `approved`). Now `https_enforced:true`; GitHub will 301 http→https like
    spine (propagation took a few minutes).
 
-**Investigation trail (kept — systematic-debugging):** first hypothesis was a *gesture*
-issue (iOS Chrome rejecting gesture-less `getUserMedia`). That fix shipped first —
-`src/reader/cameraGesture.ts` (`cameraNeedsGesture()` UA-detects iOS-non-Safari) makes an
-empty iOS-non-Safari user land on the **"Scan a broadcast"** button instead of auto-
-starting; Safari/desktop/Android keep zero-tap. It **did not fix it** (still no camera),
-which forced proper instrumentation: `startCamera` was rewritten to route *synchronous*
-failures (e.g. `mediaDevices` undefined throwing a TypeError before any promise) through
-`onError`, and the denied screen now shows the real error string. That surfaced
-`Camera API unavailable (mediaDevices=missing, secureContext=false)` → the true cause.
-The gesture change was **kept** (harmless single tap; iOS Chrome may still want a gesture
-even on https — unverified), and the richer error surfacing is a genuine UX win.
+**Investigation trail (systematic-debugging):** first hypothesis was a *gesture* issue
+(iOS Chrome rejecting gesture-less `getUserMedia`). A fix shipped on that theory —
+`src/reader/cameraGesture.ts` making iOS-non-Safari users tap "Scan a broadcast" instead
+of auto-starting — and it **did not fix it** (still no camera). That failure forced proper
+instrumentation: `startCamera` was rewritten to route *synchronous* failures (e.g.
+`mediaDevices` undefined throwing a TypeError before any promise) through `onError`, and
+the denied screen now shows the real error string. That surfaced
+`Camera API unavailable (mediaDevices=missing, secureContext=false)` → the true cause
+(insecure origin). **The gesture change was then reverted** once https was verified to fix
+it (Nigel: the extra tap wasn't wanted) — `cameraGesture.ts`/`.test.ts` deleted, universal
+zero-tap auto-start restored. The richer error surfacing in `startCamera` + the denied
+screen was **kept** (a genuine UX win — a silent black viewfinder now explains itself).
 
-**Verification:** `npm test` (118 pass — `cameraGesture.test.ts` (3, real UA strings incl.
-iPadOS-as-Mac) + iOS-Chrome no-auto-start case), `tsc --noEmit`, `npm run build`,
-`npm run build:standalone` all green; redirect snippet confirmed in both `dist/` and
-`dist-standalone/`. **Device-verify pending:** Nigel to confirm on iPhone Chrome once the
-new deploy is live (camera should now open); Safari unchanged.
+**Verification:** `npm test` (114 pass), `tsc --noEmit`, `npm run build`,
+`npm run build:standalone` all green; https-upgrade snippet confirmed in both `dist/` and
+`dist-standalone/`. Device-confirmed by Nigel: camera now opens in iPhone Chrome; Safari
+unchanged.
 
 ## 2026-07-04 — .odt support + responsive broadcast view (on `main`)
 
