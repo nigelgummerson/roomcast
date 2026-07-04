@@ -16,9 +16,10 @@ npm install
 npm run dev
 ```
 
-Open the printed local URL for the **presenter** view. Drop a `.docx` (try
-`samples/dummy-handover.md`'s content, or generate the matching `.docx` fixture — see
-Task 15) to build a broadcast and start the animated QR.
+Open the printed local URL for the **presenter** view. Drop a `.docx` or `.odt` (a
+Google Doc via "Download → OpenDocument (.odt)" works; try `samples/dummy-handover.md`'s
+content, or generate the matching `.docx` fixture — see Task 15) to build a broadcast and
+start the animated QR.
 
 Open the same URL with `#reader` appended (e.g. `http://localhost:5173/#reader`) on a
 second, camera-equipped device to act as the **reader**: point the camera at the

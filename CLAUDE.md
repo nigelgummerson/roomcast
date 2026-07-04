@@ -3,6 +3,37 @@
 Session-history / collaboration log for this project. For the static, AI-agnostic
 project description (architecture, build commands, IG constraint) see `AGENTS.md`.
 
+## 2026-07-04 — .odt support + responsive broadcast view (on `main`)
+
+Two fixes (brainstormed inline, spec doc skipped per solo-dev prefs):
+
+- **Accept `.odt` as well as `.docx`.** Google Docs has no single native file; users pick
+  "Download → OpenDocument (.odt)". New `src/core/odtParser.ts` (`odtToMarkdown`): unzip
+  `content.xml` with the already-shipped `fflate`, walk the ODF block subset
+  (headings via `outline-level`, paragraphs, lists, tables) with the native `DOMParser`
+  (present in browser + jsdom), then reuse `docParser`'s exported `htmlToGfm` so `.odt`
+  inherits the same table-cell sanitisation + image stripping as `.docx`. **No new
+  dependency.** Inline bold/italic not preserved (structure + text only). Malformed zip /
+  missing `content.xml` / non-well-formed XML all throw → caught by the presenter's
+  existing error toast. `buildBroadcast` gains a `format: "docx" | "odt"` option
+  (defaults to `docx`); `PresenterApp.onFile` picks it from the file extension and rejects
+  anything else with an updated toast. `DropZone` now `accept=".docx,.odt"`.
+- **Responsive broadcast view (QR overlap fix).** The "Scan to receive" join panel was
+  `absolute bottom-6 right-6`, so on a phone/portrait the centred fountain QR grew into
+  the corner and the small QR landed on top of it. Now the panel is in normal flow
+  (`mx-auto mb-6 w-max`) — stacked *below* the fountain QR on small screens — and only
+  floats into the corner at `md`+ (≥768px, projector/laptop) via `md:absolute md:bottom-6
+  md:right-6 md:mx-0 md:mb-0`. `PresenterApp.tsx`.
+
+**Verification:** `npm test` (114 pass — added `odtParser.test.ts` (8) + a `buildBroadcast`
+`.odt`-dispatch case), `tsc --noEmit`, `npm run build`, `npm run build:standalone` all
+green. Browser-verified both fixes: a generated ward-handover `.odt` parsed and rendered
+in the real presenter (table + escaped `|` preserved); the `md+` corner-overlay layout
+renders with no overlap, and the sub-`md` effective class set resolves to a static,
+in-flow panel stacked below the fountain QR (`overlap: false`). The automation window
+couldn't be forced below ~1512px, so the phone layout was confirmed via computed styles +
+stripping the inert `md:` utilities rather than a true narrow viewport.
+
 ## 2026-07-01 — Initial build
 
 Built end-to-end via the **superpowers brainstorm → spec → plan → subagent-driven

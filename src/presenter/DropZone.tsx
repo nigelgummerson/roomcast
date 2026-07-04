@@ -13,8 +13,8 @@ export function DropZone({ onFile }: { onFile: (f: File) => void }) {
       className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center text-sm transition-colors ${
         over ? "border-[var(--rc-accent)] bg-blue-50" : "border-black/15 text-slate-500"}`}
     >
-      Drop a .docx here, or click to choose
-      <input ref={inputRef} type="file" accept=".docx" className="hidden"
+      Drop a .docx or .odt here, or click to choose
+      <input ref={inputRef} type="file" accept=".docx,.odt" className="hidden"
         onChange={(e) => take(e.target.files?.[0] ?? undefined)} />
     </div>
   );

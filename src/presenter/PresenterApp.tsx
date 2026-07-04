@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { buildBroadcast } from "./buildBroadcast";
+import { buildBroadcast, type DocFormat } from "./buildBroadcast";
 import { useFrameLoop } from "./useFrameLoop";
 import { QrImage } from "./QrImage";
 import { DropZone } from "./DropZone";
@@ -42,9 +42,18 @@ export function PresenterApp() {
   const ttlHours = resolveTtlHours(profile, choice, customHours);
 
   const onFile = async (file: File) => {
+    const format: DocFormat | null = /\.docx$/i.test(file.name)
+      ? "docx"
+      : /\.odt$/i.test(file.name)
+        ? "odt"
+        : null;
+    if (!format) {
+      showToast("Could not read this file — please supply a .docx or .odt", { severity: "error" });
+      return;
+    }
     try {
       const buf = await file.arrayBuffer();
-      const built = await buildBroadcast(buf, { title, profile, ttlHours });
+      const built = await buildBroadcast(buf, { title, profile, ttlHours, format });
       setMd(built.md);
       setFrames(built.frames);
       setSizeBytes(built.sizeBytes);
@@ -53,7 +62,7 @@ export function PresenterApp() {
       setMd(null);
       setFrames([]);
       setSizeBytes(0);
-      showToast("Could not read this file — please supply a .docx (not .doc)", { severity: "error" });
+      showToast("Could not read this file — please supply a .docx or .odt", { severity: "error" });
     }
   };
 
@@ -86,13 +95,16 @@ export function PresenterApp() {
           </div>
         </div>
 
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex flex-1 items-center justify-center p-4">
           <div className="rounded-2xl bg-white p-6 shadow-xl">
             <QrImage text={frame} size={qrSize} ecc={FOUNTAIN_ECC} />
           </div>
         </div>
 
-        <div className="absolute bottom-6 right-6 rounded-lg border border-white/10 bg-slate-900/95 p-4 text-center shadow-lg">
+        {/* Small screens (phone/portrait): stacked in normal flow below the
+            fountain QR so it can never overlap. md+ (projector/laptop): floats
+            into the bottom-right corner as an overlay. */}
+        <div className="mx-auto mb-6 w-max rounded-lg border border-white/10 bg-slate-900/95 p-4 text-center shadow-lg md:absolute md:bottom-6 md:right-6 md:mx-0 md:mb-0">
           <p className="text-sm font-semibold">Scan to receive</p>
           <div className="mt-2 rounded-lg bg-white p-2">
             <QrImage text={readerUrl} size={132} />

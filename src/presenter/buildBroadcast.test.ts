@@ -6,6 +6,7 @@ import { packEnvelope } from "../core/envelope";
 // Minimal valid docx is awkward to embed; test the encode path via a stubbed parser is
 // covered elsewhere. Here we verify the frames a presenter emits are decodable by a reader.
 import * as parser from "../core/docParser";
+import * as odtParser from "../core/odtParser";
 import { vi } from "vitest";
 
 describe("buildBroadcast", () => {
@@ -30,6 +31,20 @@ describe("buildBroadcast", () => {
     const { md, sizeBytes } = await buildBroadcast(new ArrayBuffer(0), opts);
     const expected = packEnvelope({ v: 1, md, ...opts });
     expect(sizeBytes).toBe(expected.length);
+  });
+
+  it("uses the odt parser when format is 'odt' (and never leaks format into the envelope)", async () => {
+    const docx = vi.spyOn(parser, "docxToMarkdown").mockResolvedValue("wrong\n");
+    docx.mockClear();
+    vi.spyOn(odtParser, "odtToMarkdown").mockResolvedValue("# From ODT\n\nhi\n");
+    const { md, frames } = await buildBroadcast(new ArrayBuffer(0), {
+      title: "Ward 5", profile: "standard", ttlHours: null, format: "odt",
+    });
+    expect(docx).not.toHaveBeenCalled();
+    expect(md).toContain("# From ODT");
+    const s = new ScanSession();
+    for (const f of frames) if (s.feed(f).done) break;
+    expect(s.envelope()).toEqual({ v: 1, profile: "standard", ttlHours: null, title: "Ward 5", md });
   });
 
   it("carries ttlHours null (standard) into the reconstructed envelope", async () => {

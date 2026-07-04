@@ -32,7 +32,7 @@ One codebase, three modes, selected by hash routing in `src/App.tsx`: the base r
 app. The Home page carries the "RoomCast" hero and CTAs to `#present`/`#reader`; the
 presenter and reader headers each carry a brand link back to `#home`.
 
-**Presenter mode** (laptop → projector): drop a `.docx` → parse to structured GFM
+**Presenter mode** (laptop → projector): drop a `.docx` or `.odt` → parse to structured GFM
 markdown → preview the phone-first render → compress → fountain-encode into QR frames →
 animate on screen, alongside a small static "open the reader" QR and a confidentiality
 banner.
@@ -51,7 +51,13 @@ app.
   `Envelope` to/from bytes (the codec/compression layer referred to as "codec" in the
   design spec).
 - **`docParser.ts`** — `.docx` → structured GFM markdown (tables preserved), via
-  `mammoth` (docx → HTML) then `turndown` + `turndown-plugin-gfm` (HTML → GFM).
+  `mammoth` (docx → HTML) then `turndown` + `turndown-plugin-gfm` (HTML → GFM). Exposes
+  `htmlToGfm` (the shared HTML → GFM step, with hostile-table-cell sanitisation).
+- **`odtParser.ts`** — `.odt` (OpenDocument / Google Docs "Download → OpenDocument") →
+  structured GFM. Unzips `content.xml` with `fflate`, walks the ODF block subset
+  (headings, paragraphs, lists, tables) via `DOMParser`, then reuses `docParser`'s
+  `htmlToGfm` so it inherits the same cell sanitisation and image stripping. Inline
+  bold/italic is not preserved (structure + text only).
 - **`frames.ts`** — bytes ⇄ fountain-coded QR frame stream (`encodeToFrames`,
   `FrameDecoder`), built on `qrloop`. This is the transmitter/receiver pair from the
   design spec: the phone needs *enough* frames, not every frame, so dropped/blurred
@@ -129,6 +135,7 @@ a default, so a handover is never treated casually by accident.
 ## Testing
 
 Vitest, run via `npm test`. Coverage includes: docParser (.docx → GFM extraction),
+odtParser (.odt → GFM, tables/lists/headings + malformed-input handling),
 envelope (pack/unpack round-trip), frames (fountain encode → decode round-trip with
 simulated drops/reordering), mobiliser (table→cards, sections, search); a manual
 "Original layout" toggle is always available to view the raw markdown, alongside an
