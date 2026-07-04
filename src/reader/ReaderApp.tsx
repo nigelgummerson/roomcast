@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ScanSession, startCamera } from "./scanner";
+import { cameraNeedsGesture } from "./cameraGesture";
 import {
   saveDoc,
   getDoc,
@@ -61,15 +62,18 @@ export function ReaderApp() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Decide the initial landing state once listDocs resolves: a returning
-  // user with a live copy lands on "copies"; a first-time/empty user goes
-  // straight to "scanning" (the camera). Until this resolves the view stays
-  // "loading" (a spinner), so neither state flashes before we know which one
-  // applies.
+  // Decide the initial landing state once listDocs resolves: a returning user
+  // with a live copy lands on "copies"; a first-time/empty user goes straight to
+  // "scanning" (the camera). EXCEPT on browsers that reject a gesture-less
+  // getUserMedia (iOS Chrome/Firefox/Edge — see cameraNeedsGesture): there an
+  // empty user lands on "copies" too, so the camera only opens from their tap on
+  // the "Scan a broadcast" button. Safari and everything else keep the zero-tap
+  // auto-start. Until this resolves the view stays "loading" (a spinner) so
+  // neither state flashes before we know which one applies.
   useEffect(() => {
     listDocs(Date.now()).then((docs) => {
       setSaved(docs);
-      setView(docs.length === 0 ? "scanning" : "copies");
+      setView(docs.length === 0 && !cameraNeedsGesture() ? "scanning" : "copies");
     });
   }, []);
 

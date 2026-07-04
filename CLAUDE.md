@@ -3,6 +3,32 @@
 Session-history / collaboration log for this project. For the static, AI-agnostic
 project description (architecture, build commands, IG constraint) see `AGENTS.md`.
 
+## 2026-07-04 — Fix: camera never opens in iOS Chrome (on `main`)
+
+**Symptom (Nigel, on iPhone):** tapping *Receive* opened the camera in **Safari** but
+not in **Chrome** — no permission prompt at all in Chrome.
+
+**Root cause:** iOS third-party browsers (Chrome=CriOS, Firefox=FxiOS, Edge=EdgiOS, …) run
+on WKWebView and reject a *gesture-less* `getUserMedia` **silently** (no prompt); Safari
+prompts anyway. The reader auto-started the camera on the empty-copies landing
+(`ReaderApp.tsx` listDocs effect → `startCamera` → `getUserMedia`) — i.e. after a hash
+nav + async IndexedDB read, outside any user-activation window. So Safari worked, iOS
+Chrome didn't.
+
+**Fix (selective, per Nigel — don't burden Safari with an extra tap):** new
+`src/reader/cameraGesture.ts` (`cameraNeedsGesture(nav)`) UA-detects iOS-non-Safari. The
+landing effect now auto-starts only when `!cameraNeedsGesture()`; on iOS Chrome/Firefox/Edge
+an empty user lands on the existing **"Scan a broadcast"** button so the camera opens from
+their tap (fresh transient activation). Safari + desktop + Android keep the zero-tap
+auto-start. Both scanning entry points were already tap-driven.
+
+**Verification:** `npm test` (118 pass — added `cameraGesture.test.ts` (3, real UA strings
+incl. iPadOS-as-Mac) + an iOS-Chrome no-auto-start case in `ReaderApp.test.tsx`), `tsc
+--noEmit`, `npm run build`, `npm run build:standalone` all green. **NOT yet device-verified:**
+the real iOS-Chrome getUserMedia acceptance can't be driven headlessly — left for Nigel to
+confirm on his iPhone (Chrome: tap Receive → tap "Scan a broadcast" → camera should prompt
++ open; Safari behaviour unchanged).
+
 ## 2026-07-04 — .odt support + responsive broadcast view (on `main`)
 
 Two fixes (brainstormed inline, spec doc skipped per solo-dev prefs):

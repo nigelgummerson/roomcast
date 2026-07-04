@@ -82,10 +82,35 @@ describe("ReaderApp landing state", () => {
     expect(startCamera).not.toHaveBeenCalled();
   });
 
-  it("auto-starts the camera when there are no copies", async () => {
+  it("auto-starts the camera when there are no copies (browsers that allow it)", async () => {
+    // jsdom's default UA is non-iOS, so cameraNeedsGesture() is false here — the
+    // zero-tap auto-start path (kept for Safari + desktop + Android) is exercised.
     render(<ReaderApp />);
     const { startCamera } = await import("./scanner");
     await waitFor(() => expect(startCamera).toHaveBeenCalled());
+  });
+
+  it("does NOT auto-start on iOS Chrome; it waits for a tap", async () => {
+    // iOS Chrome (CriOS) rejects a gesture-less getUserMedia silently (no
+    // prompt), so a first-time/empty user must land on the "Scan a broadcast"
+    // button and the camera must only open from their tap.
+    const ua =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 " +
+      "(KHTML, like Gecko) CriOS/126.0 Mobile/15E148 Safari/604.1";
+    // userAgent is a getter on Navigator.prototype; define an own property to
+    // shadow it, then delete it afterwards to restore the real getter.
+    Object.defineProperty(navigator, "userAgent", { value: ua, configurable: true });
+    try {
+      render(<ReaderApp />);
+      const { startCamera } = await import("./scanner");
+      const scanButton = await screen.findByRole("button", { name: /scan a broadcast/i });
+      expect(startCamera).not.toHaveBeenCalled();
+
+      fireEvent.click(scanButton);
+      await waitFor(() => expect(startCamera).toHaveBeenCalled());
+    } finally {
+      delete (navigator as { userAgent?: string }).userAgent;
+    }
   });
 
   it("synchronously shows loading indicator (not scan button) on empty store", async () => {
