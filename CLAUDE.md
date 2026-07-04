@@ -8,26 +8,43 @@ project description (architecture, build commands, IG constraint) see `AGENTS.md
 **Symptom (Nigel, on iPhone):** tapping *Receive* opened the camera in **Safari** but
 not in **Chrome** — no permission prompt at all in Chrome.
 
-**Root cause:** iOS third-party browsers (Chrome=CriOS, Firefox=FxiOS, Edge=EdgiOS, …) run
-on WKWebView and reject a *gesture-less* `getUserMedia` **silently** (no prompt); Safari
-prompts anyway. The reader auto-started the camera on the empty-copies landing
-(`ReaderApp.tsx` listDocs effect → `startCamera` → `getUserMedia`) — i.e. after a hash
-nav + async IndexedDB read, outside any user-activation window. So Safari worked, iOS
-Chrome didn't.
+**ACTUAL root cause (found by instrumenting — see below):** the page was reachable over
+plain **`http://`**. `navigator.mediaDevices` is only exposed in a **secure context**, so
+on http iOS Chrome reports `secureContext=false` and `mediaDevices` is `undefined` — the
+scanner can't even call `getUserMedia`. Safari happened to auto-upgrade to https (secure →
+worked); iOS Chrome stayed on http (insecure → no camera). Proven by curl:
+`http://…/roomcast/` returned **200** (served insecure) while `http://…/spine/`
+returned **301→https**. GitHub Pages **"Enforce HTTPS" was off** for roomcast
+(`https_enforced:false`) and **on** for spine-planner — which is the *only* reason
+spine-planner's identical `navigator.mediaDevices.getUserMedia` code works in iOS Chrome.
+It was never an app-capability limit.
 
-**Fix (selective, per Nigel — don't burden Safari with an extra tap):** new
-`src/reader/cameraGesture.ts` (`cameraNeedsGesture(nav)`) UA-detects iOS-non-Safari. The
-landing effect now auto-starts only when `!cameraNeedsGesture()`; on iOS Chrome/Firefox/Edge
-an empty user lands on the existing **"Scan a broadcast"** button so the camera opens from
-their tap (fresh transient activation). Safari + desktop + Android keep the zero-tap
-auto-start. Both scanning entry points were already tap-driven.
+**Fix (two-part, defence in depth):**
+1. **App self-upgrade:** inline `http:`→`https:` redirect at the top of `index.html`
+   `<head>` (runs before anything else). Skips `localhost`/`127.0.0.1` (dev is already a
+   secure context) and `file://` (the standalone build).
+2. **Server enforce:** enabled GitHub Pages "Enforce HTTPS" via
+   `gh api -X PUT repos/nigelgummerson/roomcast/pages -F https_enforced=true` (cert state
+   was already `approved`). Now `https_enforced:true`; GitHub will 301 http→https like
+   spine (propagation took a few minutes).
 
-**Verification:** `npm test` (118 pass — added `cameraGesture.test.ts` (3, real UA strings
-incl. iPadOS-as-Mac) + an iOS-Chrome no-auto-start case in `ReaderApp.test.tsx`), `tsc
---noEmit`, `npm run build`, `npm run build:standalone` all green. **NOT yet device-verified:**
-the real iOS-Chrome getUserMedia acceptance can't be driven headlessly — left for Nigel to
-confirm on his iPhone (Chrome: tap Receive → tap "Scan a broadcast" → camera should prompt
-+ open; Safari behaviour unchanged).
+**Investigation trail (kept — systematic-debugging):** first hypothesis was a *gesture*
+issue (iOS Chrome rejecting gesture-less `getUserMedia`). That fix shipped first —
+`src/reader/cameraGesture.ts` (`cameraNeedsGesture()` UA-detects iOS-non-Safari) makes an
+empty iOS-non-Safari user land on the **"Scan a broadcast"** button instead of auto-
+starting; Safari/desktop/Android keep zero-tap. It **did not fix it** (still no camera),
+which forced proper instrumentation: `startCamera` was rewritten to route *synchronous*
+failures (e.g. `mediaDevices` undefined throwing a TypeError before any promise) through
+`onError`, and the denied screen now shows the real error string. That surfaced
+`Camera API unavailable (mediaDevices=missing, secureContext=false)` → the true cause.
+The gesture change was **kept** (harmless single tap; iOS Chrome may still want a gesture
+even on https — unverified), and the richer error surfacing is a genuine UX win.
+
+**Verification:** `npm test` (118 pass — `cameraGesture.test.ts` (3, real UA strings incl.
+iPadOS-as-Mac) + iOS-Chrome no-auto-start case), `tsc --noEmit`, `npm run build`,
+`npm run build:standalone` all green; redirect snippet confirmed in both `dist/` and
+`dist-standalone/`. **Device-verify pending:** Nigel to confirm on iPhone Chrome once the
+new deploy is live (camera should now open); Safari unchanged.
 
 ## 2026-07-04 — .odt support + responsive broadcast view (on `main`)
 
