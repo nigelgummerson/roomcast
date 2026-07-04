@@ -2,6 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Camera APIs (navigator.mediaDevices) are ONLY exposed in a secure
+      // context. GitHub Pages can serve this page over plain http://, where iOS
+      // Chrome then reports secureContext=false and the scanner cannot open (it
+      // was never an app-capability limit — Safari just happened to auto-upgrade
+      // to https). Force https up-front so the context is always secure. Leave
+      // localhost (already a secure context for `npm run dev`) and the file://
+      // standalone build untouched.
+      (function () {
+        var h = location.hostname;
+        if (location.protocol === "http:" && h !== "localhost" && h !== "127.0.0.1") {
+          location.replace(location.href.replace(/^http:/, "https:"));
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
     <title>RoomCast</title>
