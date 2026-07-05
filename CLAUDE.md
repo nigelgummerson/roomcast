@@ -3,6 +3,44 @@
 Session-history / collaboration log for this project. For the static, AI-agnostic
 project description (architecture, build commands, IG constraint) see `AGENTS.md`.
 
+## 2026-07-05 — Prior-art scan + positioning docs (on `main`)
+
+Nigel asked whether "fountain QR" is used elsewhere, and whether any app matches
+roomcast's niche (offline/serverless + QR-broadcast-to-many + on-device expiring copies).
+Ran the `deep-research` workflow (98 agents, 16 primary sources, 25 claims through 3-vote
+adversarial verification — 24 confirmed, 1 refuted).
+
+**Verdict: the niche is genuinely unoccupied.** The landscape splits into two categories
+that never intersect: (1) ephemeral document sharing *with* TTL (Bitwarden Send, Tresorit
+Send, Wormhole, PrivateBin, Keeper) — all alive in 2026 but **server-mediated, link-based**,
+no on-device expiry, no QR broadcast; (2) offline **fountain-coded animated QR** transfer
+(`txqr`, BC-UR / SeedSigner / Keystone, QRFontain, libcimbar) — roomcast's *exact*
+transport but **pure codecs with no TTL**, built for **one-to-one** air-gapped handshakes.
+No product combines all three of roomcast's attributes; no clinical-handover instance
+found. Key nuance (a verifier refuted the "fountain-QR is inherently one-to-one" claim):
+fountain codes are **broadcast-capable by design**, so roomcast's one-to-many model is a
+**novel application of an established primitive**, not a new primitive.
+
+**Docs updated (docs-only, no code change):**
+- `AGENTS.md` — new "Prior art & positioning" section (the five references + the
+  two-categories-never-intersect finding + the "novel application, not novel primitive"
+  framing).
+- `docs/DPIA-draft.md` — appended a sentence to the "Ephemeral animated transport" control
+  noting the transport is an established technique (txqr / BC-UR / hardware wallets), so an
+  IG reviewer sees "same primitive as air-gapped wallets," not "novel protocol."
+
+No verification needed (Markdown docs only; no test/build impact).
+
+**Follow-up (same session):** dug into `libcimbar` specifically. Confirmed from the repo it
+is **actively maintained** (v0.6.5, 12 May 2026; ~6k stars, ~1000 commits), now branded
+"air-gapped data transfer," web PWA at cimbar.org. Throughput comparison: cimbar ~106 KB/s
+(colour tiles + wirehair fountain codes, drops QR's per-symbol ECC/finders) vs ~5–15 KB/s
+for B/W fountain QR — roughly **10×**. But cimbar's speed costs robustness (colour capture
+is light/camera-sensitive; needs a custom decoder), and roomcast's payloads are only a few
+KB, so B/W QR (robust, ubiquitous decoders) stays the right call — throughput is a
+non-issue at these sizes. The `libcimbar` bullet in AGENTS.md was expanded with the
+maintenance status + this throughput/robustness tradeoff.
+
 ## 2026-07-04 — Fix: camera never opens in iOS Chrome (on `main`)
 
 **Symptom (Nigel, on iPhone):** tapping *Receive* opened the camera in **Safari** but

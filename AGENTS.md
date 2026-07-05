@@ -25,6 +25,52 @@ the DPIA at `docs/DPIA-draft.md`. All development, testing, and demonstration us
 entirely fictional dummy data — see `samples/dummy-handover.md`. Anyone extending or
 running this app should keep to fictional data unless that sign-off exists.
 
+## Prior art & positioning
+
+roomcast's transport — an animated, **fountain-coded** (Luby-transform / rateless) QR
+stream that a camera reconstructs from *enough*, not all, frames — is an established
+technique, not a bespoke invention. Documenting that is deliberate: for an IG/Caldicott
+reviewer, "we apply the same visual-transfer primitive as air-gapped hardware wallets"
+is a far safer sentence than "we invented a novel transfer protocol." Known prior art for
+the mechanism:
+
+- **`txqr`** (github.com/divan/txqr) — the canonical "transfer data via animated QR
+  codes" project, explicitly built on fountain (LT) codes; the same primitive `frames.ts`
+  uses via `qrloop`.
+- **BC-UR / multipart Uniform Resources** (developer.blockchaincommons.com/animated-qrs/)
+  — the standard used by air-gapped Bitcoin hardware wallets (**SeedSigner**, **Keystone**,
+  Sparrow) to move transaction data across a camera gap; Luby-transform rateless encoding,
+  reception can begin at any frame.
+- **`QRFontain`** (github.com/dridk/qrfontain) — arbitrary files → LT-coded QR sequence,
+  scannable in any order.
+- **`libcimbar`** (github.com/sz3/libcimbar) — animated *colour* barcodes with fountain
+  codes (wirehair), fully offline. Actively maintained (v0.6.5, May 2026; ~6k stars) and
+  self-described as "air-gapped data transfer"; web demo/PWA at cimbar.org. The densest,
+  fastest transport in this list (~106 KB/s screen→camera vs ~5–15 KB/s for B/W fountain
+  QR) — but colour capture is fragile in poor light/cheap cameras and needs a custom
+  decoder, so B/W QR remains the right choice for roomcast's small payloads broadcast to
+  many heterogeneous phones (robustness over throughput; a compressed handover is only a
+  few KB). Still a pure codec — no TTL, no broadcast — so category 2 regardless.
+
+**What is genuinely unoccupied is the *combination*, not the primitive.** A 2026 prior-art
+scan (multi-source, adversarially verified — see `CLAUDE.md` 2026-07-05 session) found the
+landscape splits into two categories that never intersect:
+
+1. **Ephemeral document sharing with TTL** — Bitwarden Send, Tresorit Send, Wormhole,
+   PrivateBin, Keeper One-Time Share. All alive in 2026 and all have real expiry, but
+   every one is **server-mediated and link/URL-based**: expiry is a server-side purge, and
+   nothing broadcasts to co-located receivers or leaves an on-device expiring copy.
+2. **Offline fountain-QR transfer** — the projects above. All have roomcast's exact
+   transport but are **pure codecs with no document TTL**, and are architected for
+   **one-to-one** air-gapped handshakes, not one-to-many broadcast.
+
+No surveyed product combines all three of roomcast's defining attributes
+(offline/serverless **+** fountain-QR broadcast to *multiple* simultaneous receivers **+**
+on-device expiring copies), and no clinical/handover instance of the pattern was found.
+Note that fountain codes are inherently **broadcast-capable** (that is what they were
+designed for) — so roomcast's one-to-many model is a **novel application of an existing
+primitive**, not a new primitive. That is the accurate and defensible framing.
+
 ## Architecture
 
 One codebase, three modes, selected by hash routing in `src/App.tsx`: the base route

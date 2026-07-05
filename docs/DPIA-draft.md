@@ -140,7 +140,12 @@ forgotten by a busy clinical team, rather than relying on manual diligence.
   re-scannable code sitting on a screen or in a saved image in the way a static QR
   pointing at a hosted URL would be; a single still photograph of one frame reconstructs
   nothing (fountain coding requires collecting a sufficient — not complete — spread of
-  frames over the animation's duration).
+  frames over the animation's duration). This fountain-coded animated-QR transport is an
+  **established, well-understood technique**, not a bespoke protocol: the same
+  Luby-transform primitive underpins `txqr` and the BC-UR standard used by air-gapped
+  Bitcoin hardware wallets (SeedSigner, Keystone). roomcast's novelty is the *application*
+  — one-to-many broadcast with on-device expiring copies — not the transfer mechanism
+  itself (see `AGENTS.md` §"Prior art & positioning").
 - **Self-hosted decoder, no third-party CDN.** The phone-side QR/WASM decoder
   (`zxing-wasm`) is bundled locally with the app rather than fetched from a CDN at scan
   time (see Task 12 finding, recorded in `AGENTS.md`), so scanning does not depend on, or
