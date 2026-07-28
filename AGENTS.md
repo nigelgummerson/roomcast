@@ -191,3 +191,9 @@ than mis-mapping it into labelled cards. Store (TTL/expiry/purge), App/route, pr
 and reader component shells are tested.
 Manual-only (not unit-tested): a real projector + physical phone scanning test — the
 true scannability/bedside-readability check.
+
+## Outputs
+
+capacity: public
+
+- [Roomcast](https://plan.skeletalsurgery.com/roomcast/) | type: app | status: final | date: 2026-07-04
