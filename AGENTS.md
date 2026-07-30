@@ -197,3 +197,15 @@ true scannability/bedside-readability check.
 capacity: public
 
 - [Roomcast](https://plan.skeletalsurgery.com/roomcast/) | type: app | status: final | date: 2026-07-04
+
+## Done when
+
+type: project
+status: draft
+
+- [ ] PR #1 reviewed and merged, triggering the first live deploy
+- [ ] IG route agreed — dummy data only until then
+
+<!-- Drafted 2026-07-30 from this project's own PROJECT-GUIDE.md entry.
+     Correct it and delete the `status: draft` line when you next work here.
+     Format: tools/project-index/STATE-FORMAT.md -->
