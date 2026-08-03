@@ -1,6 +1,6 @@
 # roomcast
 
-Static, AI-agnostic project description. For session history and collaboration log see
+A zero-install, offline browser tool that broadcasts a document to a room as an animated fountain-coded QR stream. Anyone present scans it once with a phone camera and receives a readable copy that self-expires, with no server, login, account, network transfer of content, or paper.
 `CLAUDE.md`. For the design rationale see `docs/superpowers/specs/2026-07-01-roomcast-design.md`
 and the implementation plan at `docs/superpowers/plans/2026-07-01-roomcast.md`.
 
