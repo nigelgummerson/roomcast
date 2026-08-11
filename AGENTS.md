@@ -201,11 +201,10 @@ capacity: public
 ## Done when
 
 type: project
-status: draft
 
-- [ ] PR #1 reviewed and merged, triggering the first live deploy
-- [ ] IG route agreed — dummy data only until then
-
-<!-- Drafted 2026-07-30 from this project's own PROJECT-GUIDE.md entry.
-     Correct it and delete the `status: draft` line when you next work here.
-     Format: tools/project-index/STATE-FORMAT.md -->
+- [x] Presenter and reader modes working end to end over a fountain-coded QR stream
+- [x] Both builds shipping — hosted PWA and a single self-contained offline HTML file
+- [x] Live at plan.skeletalsurgery.com/roomcast/
+- [x] Prior-art positioning documented so an IG reviewer sees an established primitive, not a novel protocol
+- [ ] Manual projector-and-phones scannability test passed in a real room
+- [ ] DPIA taken to a Trust IG function and Caldicott Guardian for a decision
